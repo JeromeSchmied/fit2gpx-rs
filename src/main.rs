@@ -1,3 +1,4 @@
+use clap::Parser;
 use fit_rust::{
     protocol::{message_type::MessageType, value::Value, DataMessage, FitMessage},
     Fit,
@@ -6,6 +7,12 @@ use geo_types::{coord, Point};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
 use std::{fs, fs::File, io::BufWriter};
 use time::OffsetDateTime;
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    pub files: Vec<String>,
+}
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
 struct RecordData {
@@ -104,10 +111,14 @@ impl From<RecordData> for Waypoint {
 
 fn main() {
     // collecting cli args
-    let args = std::env::args().collect::<Vec<_>>();
+    let args = Args::parse();
 
     let mut handles = vec![];
-    for file in args.iter().skip(1).filter(|f| f.ends_with(".fit")) {
+    for file in args.files.iter() {
+        if !file.ends_with(".fit") {
+            eprintln!("invalid file: {file:?}");
+            continue;
+        }
         let file = file.clone();
         let jh = std::thread::spawn(move || {
             fit2gpx(&file);
