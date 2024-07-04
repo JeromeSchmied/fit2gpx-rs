@@ -46,6 +46,7 @@ fn main() {
                         Value::Time(t) => t,
                         t => panic!("invalid time: {t:?}"),
                     };
+                    let t = chrono::DateTime::from_timestamp(*t as i64, 0).unwrap();
 
                     println!("at {} at ({};{})", t, x, y);
                 }
