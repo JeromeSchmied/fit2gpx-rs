@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 chrono = { version = "0.4.38", default-features = false }
 fit-rust = "0.1.8"
+geo-types = "0.7.13"
 gpx = "0.10.0"

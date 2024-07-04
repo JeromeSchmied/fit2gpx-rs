@@ -1,20 +1,21 @@
 use fit_rust::{
-    protocol::{
-        data_field::DataField, message_type::MessageType, value::Value, FitDataMessage, FitMessage,
-    },
+    protocol::{message_type::MessageType, value::Value, FitDataMessage, FitMessage},
     Fit,
 };
+use geo_types::{coord, Point};
+use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
 use std::fs;
+use std::{fs::File, io::BufWriter};
 
 fn main() {
     // collecting cli args
     let args = std::env::args().collect::<Vec<_>>();
-    let file_path = args.get(1).unwrap_or_else(|| {
+    let f_in = args.get(1).unwrap_or_else(|| {
         println!("no file path specified");
         std::process::exit(1)
     });
 
-    let file = fs::read(file_path).unwrap();
+    let file = fs::read(f_in).unwrap();
     let fit: Fit = Fit::read(file).unwrap();
 
     println!("\n\nHEADER:");
@@ -25,6 +26,8 @@ fn main() {
     println!("\tdata_type: {}", &fit.header.data_type);
     println!("\tcrc: {:?}", &fit.header.crc);
     println!("-----------------------------\n");
+
+    let mut track_segment = TrackSegment { points: vec![] };
 
     for data in &fit.data {
         match data {
@@ -50,10 +53,44 @@ fn main() {
                     let t = chrono::DateTime::from_timestamp(*t as i64, 0).unwrap();
 
                     println!("at {} at ({};{})", t, x, y);
+                    // Add track point
+                    let geo_point: Point = Point(coord! {x: x as f64, y: y as f64});
+                    let mut wp = Waypoint::new(geo_point);
+                    wp.elevation = None;
+                    // wp.time = Some(t.into());
+                    track_segment.points.push(Waypoint::new(geo_point));
                 }
             }
         }
     }
+
+    // Instantiate Gpx struct
+    let track = Track {
+        name: None,
+        comment: None,
+        description: None,
+        source: None,
+        links: vec![],
+        type_: None,
+        number: None,
+        segments: vec![track_segment],
+    };
+    let gpx = Gpx {
+        version: GpxVersion::Gpx11,
+        creator: None,
+        metadata: None,
+        waypoints: vec![],
+        tracks: vec![track],
+        routes: vec![],
+    };
+
+    let f_out = f_in.replace(".fit", ".gpx");
+    // Create file at path
+    let gpx_file = File::create(f_out).unwrap();
+    let buf = BufWriter::new(gpx_file);
+
+    // Write to file
+    gpx::write(&gpx, buf).unwrap();
 }
 
 /// datafield at num
