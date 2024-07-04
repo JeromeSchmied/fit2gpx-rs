@@ -37,28 +37,29 @@ fn main() {
             FitMessage::Data(msg) => {
                 // println!("\nData: {:#?}", msg.data);
                 if let MessageType::Record = msg.data.message_type {
-                    let x: f32 = match df_at(msg, 0) {
-                        Value::F32(x) => *x,
-                        x => panic!("invalid x coordinate: {x:?}"),
-                    };
-                    let y: f32 = match df_at(msg, 1) {
+                    let y: f32 = match df_at(msg, 0) {
                         Value::F32(y) => *y,
                         y => panic!("invalid y coordinate: {y:?}"),
                     };
+                    let x: f32 = match df_at(msg, 1) {
+                        Value::F32(x) => *x,
+                        x => panic!("invalid x coordinate: {x:?}"),
+                    };
+
+                    // let elev = todo!(); TODO
 
                     let t = match df_at(msg, 253) {
                         Value::Time(t) => t,
                         t => panic!("invalid time: {t:?}"),
                     };
-                    let t = chrono::DateTime::from_timestamp(*t as i64, 0).unwrap();
+                    let t = time::OffsetDateTime::from_unix_timestamp((*t).into()).unwrap();
 
-                    println!("at {} at ({};{})", t, x, y);
                     // Add track point
                     let geo_point: Point = Point(coord! {x: x as f64, y: y as f64});
                     let mut wp = Waypoint::new(geo_point);
-                    wp.elevation = None;
-                    // wp.time = Some(t.into());
-                    track_segment.points.push(Waypoint::new(geo_point));
+                    // wp.elevation = elev; // TODO
+                    wp.time = Some(t.into());
+                    track_segment.points.push(wp);
                 }
             }
         }
