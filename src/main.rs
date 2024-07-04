@@ -8,6 +8,8 @@ use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
 use std::{fs, fs::File, io::BufWriter};
 use time::OffsetDateTime;
 
+type Res<T> = Result<T, Box<dyn std::error::Error>>;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -121,20 +123,24 @@ fn main() {
         }
         let file = file.clone();
         let jh = std::thread::spawn(move || {
-            fit2gpx(&file);
+            let _ = fit2gpx(&file).inspect_err(|e| eprintln!("error: {e:#?}"));
         });
         handles.push(jh);
     }
     for handle in handles {
-        handle.join().unwrap();
+        let res = handle.join();
+        if let Err(e) = res {
+            eprintln!("error: {e:#?}");
+            continue;
+        }
     }
 }
 
-fn fit2gpx(f_in: &String) {
-    let file = fs::read(f_in).unwrap();
-    let fit: Fit = Fit::read(file).unwrap();
-    eprintln!("-----------------------------------\n\n\nfile: {f_in}");
-    // let mut log_file = File::create([f_in, ".log"].concat()).unwrap();
+fn fit2gpx(f_in: &String) -> Res<()> {
+    let file = fs::read(f_in)?;
+    let fit: Fit = Fit::read(file)?;
+    eprintln!("file: {f_in}");
+    // let mut log_file = File::create([f_in, ".log"].concat())?;
 
     // println!("\n\nHEADER:");
     // println!("\theader size: {}", &fit.header.header_size);
@@ -154,12 +160,12 @@ fn fit2gpx(f_in: &String) {
                 // println!("\nDefinition: {:#?}", msg.data);
             }
             FitMessage::Data(msg) => {
-                // writeln!(log_file, "\nData: {msg:#?}").unwrap();
+                // writeln!(log_file, "\nData: {msg:#?}")?;
                 // println!("\nData: {:#?}", msg);
                 if let MessageType::Record = msg.data.message_type {
                     let rec_dat: RecordData = msg.data.clone().into();
                     if rec_dat.invalid() {
-                        eprintln!("warn: guess it's invalid, as it doesn't contain lat/lon data: {msg:#?}");
+                        eprintln!("doesn't contain lat/lon data: {:?}", msg.data);
                         continue;
                     }
                     // eprintln!("{rec_dat:#?}");
@@ -173,7 +179,7 @@ fn fit2gpx(f_in: &String) {
                         track_segment.points.push(wp);
                     } else {
                         eprintln!("warn: NOT in an activity right now");
-                        // std::io::stdin().read_line(&mut String::new()).unwrap();
+                        // std::io::stdin().read_line(&mut String::new())?;
                     }
                 } else if let MessageType::Activity = msg.data.message_type {
                     let start_stop = df_at(&msg.data, 4);
@@ -211,11 +217,13 @@ fn fit2gpx(f_in: &String) {
 
     let f_out = f_in.replace(".fit", ".gpx");
     // Create file at path
-    let gpx_file = File::create(f_out).unwrap();
+    let gpx_file = File::create(f_out)?;
     let buf = BufWriter::new(gpx_file);
 
     // Write to file
-    gpx::write(&gpx, buf).unwrap();
+    gpx::write(&gpx, buf)?;
+
+    Ok(())
 }
 
 fn value_to_float(val: Option<&Value>) -> Option<f64> {
