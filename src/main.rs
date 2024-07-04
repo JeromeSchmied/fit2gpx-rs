@@ -30,8 +30,7 @@ struct RecordData {
 impl RecordData {
     // crazy check
     fn invalid(&self) -> bool {
-        (self.lat.is_some_and(|lat| lat == 0.) && self.lon.is_some_and(|lon| lon == 0.))
-            || (self.lat.is_none() && self.lon.is_none())
+        self.lat.is_none() && self.lon.is_none()
     }
 }
 impl From<DataMessage> for RecordData {
@@ -123,16 +122,17 @@ fn main() {
 fn fit2gpx(f_in: &String) {
     let file = fs::read(f_in).unwrap();
     let fit: Fit = Fit::read(file).unwrap();
+    eprintln!("-----------------------------------\n\n\nfile: {f_in}");
     // let mut log_file = File::create([f_in, ".log"].concat()).unwrap();
 
-    println!("\n\nHEADER:");
-    println!("\theader size: {}", &fit.header.header_size);
-    println!("\tprotocol version: {}", &fit.header.protocol_version);
-    println!("\tprofile version: {}", &fit.header.profile_version);
-    println!("\tdata_size: {}", &fit.header.data_size);
-    println!("\tdata_type: {}", &fit.header.data_type);
-    println!("\tcrc: {:?}", &fit.header.crc);
-    println!("-----------------------------\n");
+    // println!("\n\nHEADER:");
+    // println!("\theader size: {}", &fit.header.header_size);
+    // println!("\tprotocol version: {}", &fit.header.protocol_version);
+    // println!("\tprofile version: {}", &fit.header.profile_version);
+    // println!("\tdata_size: {}", &fit.header.data_size);
+    // println!("\tdata_type: {}", &fit.header.data_type);
+    // println!("\tcrc: {:?}", &fit.header.crc);
+    // println!("-----------------------------\n");
 
     let mut track_segment = TrackSegment { points: vec![] };
     let mut ongoing_activity = true;
@@ -148,7 +148,7 @@ fn fit2gpx(f_in: &String) {
                 if let MessageType::Record = msg.data.message_type {
                     let rec_dat: RecordData = msg.data.clone().into();
                     if rec_dat.invalid() {
-                        eprintln!("warn: guess it's invalid: {msg:#?}");
+                        eprintln!("warn: guess it's invalid, as it doesn't contain lat/lon data: {msg:#?}");
                         continue;
                     }
                     // eprintln!("{rec_dat:#?}");
