@@ -3,6 +3,13 @@ name = "fit2gpx"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
+description = ".fit to .gpx converter"
+keywords = ["garmin", "fit", "cli"]
+categories = ["command-line-interface"]
+repository = "https://github.com/jeromeschmied/fit2gpx-rs"
+license = "MIT"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
