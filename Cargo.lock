@@ -62,7 +62,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fit_test"
+name = "fit2gpx"
 version = "0.1.0"
 dependencies = [
  "fit-rust",
