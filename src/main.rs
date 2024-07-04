@@ -16,6 +16,7 @@ fn main() {
 
     let file = fs::read(file_path).unwrap();
     let fit: Fit = Fit::read(file).unwrap();
+
     println!("\n\nHEADER:");
     println!("\theader size: {}", &fit.header.header_size);
     println!("\tprotocol version: {}", &fit.header.protocol_version);
