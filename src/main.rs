@@ -11,8 +11,16 @@ fn main() {
     // collecting cli args
     let args = std::env::args().collect::<Vec<_>>();
 
+    let mut handles = vec![];
     for file in args.iter().skip(1) {
-        fit2gpx(file);
+        let file = file.clone();
+        let jh = std::thread::spawn(move || {
+            fit2gpx(&file);
+        });
+        handles.push(jh);
+    }
+    for handle in handles {
+        handle.join().unwrap();
     }
 }
 
