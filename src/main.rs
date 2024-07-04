@@ -10,11 +10,13 @@ use std::{fs::File, io::BufWriter};
 fn main() {
     // collecting cli args
     let args = std::env::args().collect::<Vec<_>>();
-    let f_in = args.get(1).unwrap_or_else(|| {
-        println!("no file path specified");
-        std::process::exit(1)
-    });
 
+    for file in args.iter().skip(1) {
+        fit2gpx(file);
+    }
+}
+
+fn fit2gpx(f_in: &String) {
     let file = fs::read(f_in).unwrap();
     let fit: Fit = Fit::read(file).unwrap();
 
