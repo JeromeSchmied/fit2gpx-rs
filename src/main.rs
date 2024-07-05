@@ -13,6 +13,8 @@ type Res<T> = Result<T, Box<dyn std::error::Error>>;
 #[command(version, about, long_about = None)]
 struct Args {
     pub files: Vec<String>,
+    #[arg(short, long, default_value_t = false)]
+    pub add_altitude: bool,
 }
 
 // FitRecordMsg to gpx Waypoint
@@ -104,7 +106,7 @@ struct Context {
     track_segment: TrackSegment,
 }
 
-fn fit2gpx(f_in: &str) -> Res<()> {
+fn fit2gpx(f_in: &str, add_altitude: bool) -> Res<()> {
     let file = std::fs::File::open(f_in)?;
 
     let mut reader = std::io::BufReader::new(file);
@@ -117,6 +119,21 @@ fn fit2gpx(f_in: &str) -> Res<()> {
         cx.track_segment
             .points
             .retain(|point| point.point().x_y() != (0., 0.));
+    }
+    if add_altitude {
+        let mut coords: Vec<coordinate_altitude::Coord> = cx
+            .track_segment
+            .points
+            .iter()
+            .map(|p| p.point().x_y().into())
+            .collect();
+        coordinate_altitude::add_altitude(&mut coords)?;
+
+        for (i, point) in cx.track_segment.points.iter_mut().enumerate() {
+            if point.elevation.is_none() {
+                point.elevation = coords.get(i).map(|c| c.altitude);
+            }
+        }
     }
 
     // Instantiate Gpx struct
@@ -162,7 +179,7 @@ fn main() {
         }
         let file = file.clone();
         let jh = std::thread::spawn(move || {
-            let _ = fit2gpx(&file).inspect_err(|e| eprintln!("error: {e:#?}"));
+            let _ = fit2gpx(&file, args.add_altitude).inspect_err(|e| eprintln!("error: {e:#?}"));
         });
         handles.push(jh);
     }
