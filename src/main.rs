@@ -3,18 +3,22 @@ use fit_file as fit;
 use fit_file::{fit_file, FitFieldValue, FitRecordMsg, FitSessionMsg};
 use geo_types::{coord, Point};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
-use std::{fs::File, io::BufWriter};
+use std::{collections::HashMap, fs::File, io::BufWriter, path::PathBuf};
 use time::OffsetDateTime;
 
 /// universal Result
 type Res<T> = Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(version, about, long_about = None)]
 struct Args {
     pub files: Vec<String>,
+    #[arg(short = 'd', long)]
+    pub elev_data_dir: Option<PathBuf>,
     #[arg(short, long, default_value_t = false)]
     pub add_altitude: bool,
+    #[arg(short, long, default_value_t = false)]
+    pub overwrite: bool,
 }
 
 // FitRecordMsg to gpx Waypoint
@@ -106,54 +110,48 @@ struct Context {
     track_segment: TrackSegment,
 }
 
-fn fit2gpx(f_in: &str, add_altitude: bool) -> Res<()> {
+fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
     let file = std::fs::File::open(f_in)?;
 
     let mut reader = std::io::BufReader::new(file);
     let mut cx = Context::default();
     fit_file::read(&mut reader, callback, &mut cx)?;
 
-    let percent_no_lat_lon = cx.no_lat_lon_sum as f32 / cx.track_segment.points.len() as f32;
-    if cx.no_lat_lon_sum > 0 && percent_no_lat_lon < 0.9 {
-        eprintln!("less than 90% ({} out of {} = {}) doesn't contain latitude and longitude => deleting these points", cx.no_lat_lon_sum, cx.track_segment.points.len(), percent_no_lat_lon);
-        cx.track_segment
-            .points
-            .retain(|point| point.point().x_y() != (0., 0.));
-    }
-    if add_altitude {
-        let mut coords: Vec<coordinate_altitude::Coord> = cx
-            .track_segment
-            .points
-            .iter()
-            .map(|p| p.point().x_y().into())
-            .collect();
-        coordinate_altitude::add_altitude(&mut coords)?;
+    let is_00 = |wp: &Waypoint| -> bool { wp.point().x_y() == (0., 0.) };
 
-        for (i, point) in cx.track_segment.points.iter_mut().enumerate() {
-            if point.elevation.is_none() {
-                point.elevation = coords.get(i).map(|c| c.altitude);
-            }
-        }
+    let percent_no_lat_lon = cx.no_lat_lon_sum as f32 / cx.track_segment.points.len() as f32;
+    let no_00_remains = cx.no_lat_lon_sum > 0 && percent_no_lat_lon < 0.9;
+    if no_00_remains {
+        eprintln!("less than 90% ({} out of {} = {}) doesn't contain latitude and longitude => deleting these points",
+             cx.no_lat_lon_sum, cx.track_segment.points.len(), percent_no_lat_lon);
+    }
+    cx.track_segment.points.retain(|wp| {
+        let (x, y) = wp.point().x_y();
+        (if no_00_remains { !is_00(wp) } else { true })
+            && (-90. ..90.).contains(&y)
+            && (-180. ..180.).contains(&x)
+    });
+    if config.add_altitude {
+        add_altitude(&mut cx, is_00, config);
+
+        // coordinate_altitude::add_altitude(&mut coords)?;
+
+        // for (i, point) in cx.track_segment.points.iter_mut().enumerate() {
+        //     if point.elevation.is_none() {
+        //         point.elevation = coords.get(i).map(|c| c.altitude);
+        //     }
+        // }
     }
 
     // Instantiate Gpx struct
     let track = Track {
-        name: None,
-        comment: None,
-        description: None,
-        source: None,
-        links: vec![],
-        type_: None,
-        number: None,
         segments: vec![cx.track_segment],
+        ..Track::default()
     };
     let gpx = Gpx {
         version: GpxVersion::Gpx11,
-        creator: None,
-        metadata: None,
-        waypoints: vec![],
         tracks: vec![track],
-        routes: vec![],
+        ..Gpx::default()
     };
 
     let f_out = f_in.replace(".fit", ".gpx");
@@ -167,21 +165,80 @@ fn fit2gpx(f_in: &str, add_altitude: bool) -> Res<()> {
     Ok(())
 }
 
+fn add_altitude(cx: &mut Context, is_00: impl Fn(&Waypoint) -> bool, config: &Args) {
+    let wps = &mut cx.track_segment.points;
+    let xy_yx = |wp: &Waypoint| -> srtm::Coord {
+        let (x, y) = wp.point().x_y();
+        (y, x).into()
+    };
+    let trunc = |wp: &Waypoint| -> (i32, i32) {
+        let (x, y) = wp.point().x_y();
+        (y.trunc() as i32, x.trunc() as i32)
+    };
+    let mut needs: Vec<srtm::Coord> = Vec::new();
+    for wp in wps.iter().filter(|wp| !is_00(wp)).map(trunc) {
+        if !needs.contains(&wp.into()) {
+            needs.push(wp.into());
+        }
+    }
+    if needs.is_empty() {
+        return;
+    }
+
+    let elev_data_dir = if let Some(arg_data_dir) = &config.elev_data_dir {
+        arg_data_dir.into()
+    } else if let Some(env_data_dir) = option_env!("elev_data_dir") {
+        PathBuf::from(env_data_dir)
+    } else {
+        panic!("no elevation data dir is passed as an arg or set as an environment variable: elev_data_dir");
+    };
+    let tiles: Vec<_> = needs
+        .iter()
+        .map(|coord| srtm::get_filename(*coord))
+        .map(|c| elev_data_dir.join(c))
+        .map(|p| {
+            eprintln!("path to hgt: {}", p.display());
+            srtm::Tile::from_file(p).unwrap()
+        })
+        .collect();
+    eprintln!("loaded tiles");
+    let mut elev_datas = HashMap::new();
+    for (i, coord) in needs.iter().enumerate() {
+        elev_datas.insert(coord.trunc(), tiles.get(i).unwrap());
+    }
+    eprintln!("all loaded elevation data: {:?}", elev_datas.keys());
+    for wp in wps.iter_mut() {
+        if wp.elevation.is_none() && !is_00(wp) {
+            let coord: srtm::Coord = xy_yx(wp);
+            let elev_data = elev_datas.get(&coord.trunc()).unwrap();
+            wp.elevation = Some(elev_data.get(xy_yx(wp)) as f64);
+        }
+    }
+}
+
 fn main() {
     // collecting cli args
     let args = Args::parse();
 
-    let mut handles = vec![];
+    let mut handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
     for file in args.files.iter() {
         if !file.ends_with(".fit") {
             eprintln!("invalid file: {file:?}");
             continue;
         }
+        if !args.overwrite {
+            let as_gpx = PathBuf::from(&file.clone().replace(".fit", ".gpx"));
+            if as_gpx.exists() {
+                continue;
+            }
+        }
         let file = file.clone();
+        let args = args.clone();
         let jh = std::thread::spawn(move || {
-            let _ = fit2gpx(&file, args.add_altitude).inspect_err(|e| eprintln!("error: {e:#?}"));
+            let _ = fit2gpx(&file, &args).inspect_err(|e| eprintln!("error: {e:#?}"));
         });
-        handles.push(jh);
+        jh.join().unwrap();
+        // handles.push(jh);
     }
     for handle in handles {
         let res = handle.join();
