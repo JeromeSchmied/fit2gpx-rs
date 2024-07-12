@@ -94,7 +94,7 @@ fn callback(
         }
 
         if no_lat_lon(&msg) {
-            data.no_lat_lon_sum += 1;
+            data.sum00 += 1;
         }
 
         let wp = frm_to_gwp(msg);
@@ -105,7 +105,7 @@ fn callback(
 /// Context structure. An instance of this will be passed to the parser and ultimately to the callback function so we can use it for whatever.
 #[derive(Default)]
 struct Context {
-    no_lat_lon_sum: u32,
+    sum00: u32,
     num_records_processed: u16,
     track_segment: TrackSegment,
 }
@@ -117,13 +117,11 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
     let mut cx = Context::default();
     fit_file::read(&mut reader, callback, &mut cx)?;
 
-    let is_00 = |wp: &Waypoint| -> bool { wp.point().x_y() == (0., 0.) };
-
-    let percent_no_lat_lon = cx.no_lat_lon_sum as f32 / cx.track_segment.points.len() as f32;
-    let no_00_remains = cx.no_lat_lon_sum > 0 && percent_no_lat_lon < 0.9;
+    let percent_00 = cx.sum00 as f32 / cx.track_segment.points.len() as f32;
+    let no_00_remains = cx.sum00 > 0 && percent_00 < 0.9;
     if no_00_remains {
         eprintln!("less than 90% ({} out of {} = {}) doesn't contain latitude and longitude => deleting these points",
-             cx.no_lat_lon_sum, cx.track_segment.points.len(), percent_no_lat_lon);
+             cx.sum00, cx.track_segment.points.len(), percent_00);
     }
     cx.track_segment.points.retain(|wp| {
         let (x, y) = wp.point().x_y();
@@ -132,7 +130,7 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
             && (-180. ..180.).contains(&x)
     });
     if config.add_altitude {
-        add_altitude(&mut cx, is_00, config);
+        add_altitude(&mut cx.track_segment.points, &config.elev_data_dir);
 
         // coordinate_altitude::add_altitude(&mut coords)?;
 
@@ -165,16 +163,22 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
     Ok(())
 }
 
-fn add_altitude(cx: &mut Context, is_00: impl Fn(&Waypoint) -> bool, config: &Args) {
-    let wps = &mut cx.track_segment.points;
+fn is_00(wp: &Waypoint) -> bool {
+    wp.point().x_y() == (0., 0.)
+}
+
+fn add_altitude(wps: &mut [Waypoint], elev_data_dir: &Option<PathBuf>) {
+    // coord is x,y but we need y,x
     let xy_yx = |wp: &Waypoint| -> srtm::Coord {
         let (x, y) = wp.point().x_y();
         (y, x).into()
     };
+    // kinda Waypoint to (i32, i32)
     let trunc = |wp: &Waypoint| -> (i32, i32) {
         let (x, y) = wp.point().x_y();
         (y.trunc() as i32, x.trunc() as i32)
     };
+    // tiles we need
     let mut needs: Vec<srtm::Coord> = Vec::new();
     for wp in wps.iter().filter(|wp| !is_00(wp)).map(trunc) {
         if !needs.contains(&wp.into()) {
@@ -185,34 +189,32 @@ fn add_altitude(cx: &mut Context, is_00: impl Fn(&Waypoint) -> bool, config: &Ar
         return;
     }
 
-    let elev_data_dir = if let Some(arg_data_dir) = &config.elev_data_dir {
+    let elev_data_dir = if let Some(arg_data_dir) = &elev_data_dir {
         arg_data_dir.into()
     } else if let Some(env_data_dir) = option_env!("elev_data_dir") {
         PathBuf::from(env_data_dir)
     } else {
         panic!("no elevation data dir is passed as an arg or set as an environment variable: elev_data_dir");
     };
-    let tiles: Vec<_> = needs
+    let tiles = needs
         .iter()
-        .map(|coord| srtm::get_filename(*coord))
-        .map(|c| elev_data_dir.join(c))
-        .map(|p| {
-            eprintln!("path to hgt: {}", p.display());
-            srtm::Tile::from_file(p).unwrap()
-        })
-        .collect();
-    eprintln!("loaded tiles");
-    let mut elev_datas = HashMap::new();
-    for (i, coord) in needs.iter().enumerate() {
-        elev_datas.insert(coord.trunc(), tiles.get(i).unwrap());
-    }
-    eprintln!("all loaded elevation data: {:?}", elev_datas.keys());
-    for wp in wps.iter_mut() {
-        if wp.elevation.is_none() && !is_00(wp) {
-            let coord: srtm::Coord = xy_yx(wp);
-            let elev_data = elev_datas.get(&coord.trunc()).unwrap();
-            wp.elevation = Some(elev_data.get(xy_yx(wp)) as f64);
-        }
+        .map(|c| srtm::get_filename(*c))
+        .map(|t| elev_data_dir.join(t))
+        .map(|p| srtm::Tile::from_file(p).unwrap())
+        .collect::<Vec<_>>();
+    let all_elev_data = needs
+        .iter()
+        .enumerate()
+        .map(|(i, coord)| (coord.trunc(), tiles.get(i).unwrap()))
+        .collect::<HashMap<_, _>>();
+    eprintln!("loaded elevation data: {:?}", all_elev_data.keys());
+    for wp in wps
+        .iter_mut()
+        .filter(|wp| wp.elevation.is_none() && !is_00(wp))
+    {
+        let coord: srtm::Coord = xy_yx(wp);
+        let elev_data = all_elev_data.get(&coord.trunc()).unwrap();
+        wp.elevation = Some(elev_data.get(coord) as f64);
     }
 }
 
