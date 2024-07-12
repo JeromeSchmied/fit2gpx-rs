@@ -222,31 +222,13 @@ fn main() {
     // collecting cli args
     let args = Args::parse();
 
-    let mut handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
-    for file in args.files.iter() {
-        if !file.ends_with(".fit") {
-            eprintln!("invalid file: {file:?}");
-            continue;
-        }
+    for file in args.files.iter().filter(|f| f.ends_with(".fit")) {
         if !args.overwrite {
             let as_gpx = PathBuf::from(&file.clone().replace(".fit", ".gpx"));
             if as_gpx.exists() {
                 continue;
             }
         }
-        let file = file.clone();
-        let args = args.clone();
-        let jh = std::thread::spawn(move || {
-            let _ = fit2gpx(&file, &args).inspect_err(|e| eprintln!("error: {e:#?}"));
-        });
-        jh.join().unwrap();
-        // handles.push(jh);
-    }
-    for handle in handles {
-        let res = handle.join();
-        if let Err(e) = res {
-            eprintln!("error: {e:#?}");
-            continue;
-        }
+        let _ = fit2gpx(file, &args).inspect_err(|e| eprintln!("error: {e:#?}"));
     }
 }
