@@ -3,6 +3,7 @@ use fit_file as fit;
 use fit_file::{fit_file, FitFieldValue, FitRecordMsg, FitSessionMsg};
 use geo_types::{coord, Point};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
+use rayon::prelude::*;
 use std::{collections::HashMap, fs::File, io::BufWriter, path::PathBuf};
 use time::OffsetDateTime;
 
@@ -103,18 +104,23 @@ fn callback(
 }
 
 /// Context structure. An instance of this will be passed to the parser and ultimately to the callback function so we can use it for whatever.
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Context {
+    file_name: String,
     sum00: u32,
     num_records_processed: u16,
     track_segment: TrackSegment,
 }
 
-fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
-    let file = std::fs::File::open(f_in)?;
+fn read_fit(fit: &str) -> Res<Context> {
+    let mut cx = Context {
+        file_name: fit.to_owned(),
+        ..Context::default()
+    };
+    let file = std::fs::File::open(fit)?;
 
     let mut reader = std::io::BufReader::new(file);
-    let mut cx = Context::default();
+    // let mut cx = Context::default();
     fit_file::read(&mut reader, callback, &mut cx)?;
 
     let percent_00 = cx.sum00 as f32 / cx.track_segment.points.len() as f32;
@@ -129,21 +135,12 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
             && (-90. ..90.).contains(&y)
             && (-180. ..180.).contains(&x)
     });
-    if config.add_altitude {
-        add_altitude(&mut cx.track_segment.points, &config.elev_data_dir);
-
-        // coordinate_altitude::add_altitude(&mut coords)?;
-
-        // for (i, point) in cx.track_segment.points.iter_mut().enumerate() {
-        //     if point.elevation.is_none() {
-        //         point.elevation = coords.get(i).map(|c| c.altitude);
-        //     }
-        // }
-    }
-
+    Ok(cx)
+}
+fn fit2gpx(cx: Context) -> Res<()> {
     // Instantiate Gpx struct
     let track = Track {
-        segments: vec![cx.track_segment],
+        segments: vec![cx.track_segment.clone()],
         ..Track::default()
     };
     let gpx = Gpx {
@@ -152,7 +149,7 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
         ..Gpx::default()
     };
 
-    let f_out = f_in.replace(".fit", ".gpx");
+    let f_out = cx.file_name.replace(".fit", ".gpx");
     // Create file at path
     let gpx_file = File::create(f_out)?;
     let buf = BufWriter::new(gpx_file);
@@ -162,31 +159,29 @@ fn fit2gpx(f_in: &str, config: &Args) -> Res<()> {
     println!("{} records processed", cx.num_records_processed);
     Ok(())
 }
-
 fn is_00(wp: &Waypoint) -> bool {
     wp.point().x_y() == (0., 0.)
 }
 
-fn add_altitude(wps: &mut [Waypoint], elev_data_dir: &Option<PathBuf>) {
-    // coord is x,y but we need y,x
-    let xy_yx = |wp: &Waypoint| -> srtm::Coord {
-        let (x, y) = wp.point().x_y();
-        (y, x).into()
-    };
+fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
     // kinda Waypoint to (i32, i32)
     let trunc = |wp: &Waypoint| -> (i32, i32) {
         let (x, y) = wp.point().x_y();
         (y.trunc() as i32, x.trunc() as i32)
     };
     // tiles we need
-    let mut needs: Vec<srtm::Coord> = Vec::new();
+    let mut needs = Vec::new();
     for wp in wps.iter().filter(|wp| !is_00(wp)).map(trunc) {
-        if !needs.contains(&wp.into()) {
-            needs.push(wp.into());
+        if !needs.contains(&wp) {
+            needs.push(wp);
         }
     }
+    needs
+}
+
+fn needed_tiles(needs: &[(i32, i32)], elev_data_dir: &Option<PathBuf>) -> Vec<srtm::Tile> {
     if needs.is_empty() {
-        return;
+        return vec![];
     }
 
     let elev_data_dir = if let Some(arg_data_dir) = &elev_data_dir {
@@ -196,39 +191,94 @@ fn add_altitude(wps: &mut [Waypoint], elev_data_dir: &Option<PathBuf>) {
     } else {
         panic!("no elevation data dir is passed as an arg or set as an environment variable: elev_data_dir");
     };
-    let tiles = needs
-        .iter()
+    needs
+        .par_iter()
         .map(|c| srtm::get_filename(*c))
         .map(|t| elev_data_dir.join(t))
         .map(|p| srtm::Tile::from_file(p).unwrap())
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
+fn get_all_elev_data<'a>(
+    needs: &'a [(i32, i32)],
+    tiles: &'a [srtm::Tile],
+) -> HashMap<&'a (i32, i32), &'a srtm::Tile> {
+    assert_eq!(needs.len(), tiles.len());
+    if needs.is_empty() {
+        return HashMap::new();
+    }
     let all_elev_data = needs
-        .iter()
+        .par_iter()
         .enumerate()
-        .map(|(i, coord)| (coord.trunc(), tiles.get(i).unwrap()))
+        .map(|(i, coord)| (coord, tiles.get(i).unwrap()))
         .collect::<HashMap<_, _>>();
     eprintln!("loaded elevation data: {:?}", all_elev_data.keys());
-    for wp in wps
-        .iter_mut()
-        .filter(|wp| wp.elevation.is_none() && !is_00(wp))
-    {
-        let coord: srtm::Coord = xy_yx(wp);
-        let elev_data = all_elev_data.get(&coord.trunc()).unwrap();
-        wp.elevation = Some(elev_data.get(coord) as f64);
-    }
+    all_elev_data
 }
 
-fn main() {
-    // collecting cli args
-    let args = Args::parse();
+fn add_elev(wps: &mut [Waypoint], elev_data: &HashMap<&(i32, i32), &srtm::Tile>) -> Res<()> {
+    // coord is x,y but we need y,x
+    let xy_yx = |wp: &Waypoint| -> srtm::Coord {
+        let (x, y) = wp.point().x_y();
+        (y, x).into()
+    };
+    wps.par_iter_mut()
+        .filter(|wp| wp.elevation.is_none() && !is_00(wp))
+        .for_each(|wp| {
+            let coord = xy_yx(wp);
+            let elev_data = elev_data.get(&coord.trunc()).unwrap();
+            wp.elevation = Some(elev_data.get(coord) as f64);
+        });
+    Ok(())
+}
 
-    for file in args.files.iter().filter(|f| f.ends_with(".fit")) {
-        if !args.overwrite {
-            let as_gpx = PathBuf::from(&file.clone().replace(".fit", ".gpx"));
-            if as_gpx.exists() {
-                continue;
+fn main() -> Res<()> {
+    // collecting cli args
+    let conf = Args::parse();
+
+    let all_fit = conf
+        .files
+        .par_iter()
+        .filter(|f| {
+            f.ends_with(".fit")
+                && (if !conf.overwrite {
+                    !PathBuf::from(f.replace(".fit", ".gpx")).exists()
+                } else {
+                    true
+                })
+        })
+        .flat_map(|f| read_fit(f).inspect_err(|e| eprintln!("read error: {e:?}")))
+        .collect::<Vec<_>>();
+
+    let all_needed_tile_coords = if conf.add_altitude {
+        let mut all = all_fit
+            .par_iter()
+            .flat_map(|cx| needed_tile_coords(&cx.track_segment.points))
+            .collect::<Vec<_>>();
+        all.sort_unstable();
+        all.dedup();
+
+        all
+    } else {
+        vec![]
+    };
+    let all_needed_tiles = needed_tiles(&all_needed_tile_coords, &conf.elev_data_dir);
+    let all_elev_data = get_all_elev_data(&all_needed_tile_coords, &all_needed_tiles);
+    // coordinate_altitude::add_altitude(&mut coords)?;
+    // for (i, point) in cx.track_segment.points.iter_mut().enumerate() {
+    //     if point.elevation.is_none() {
+    //         point.elevation = coords.get(i).map(|c| c.altitude);
+    //     }
+    // }
+
+    all_fit
+        .into_iter()
+        .try_for_each(|mut cx: Context| -> Res<()> {
+            if conf.add_altitude {
+                let _ = add_elev(&mut cx.track_segment.points, &all_elev_data)
+                    .inspect_err(|e| eprintln!("elevation error: {e:?}"));
             }
-        }
-        let _ = fit2gpx(file, &args).inspect_err(|e| eprintln!("error: {e:#?}"));
-    }
+            fit2gpx(cx).inspect_err(|e| eprintln!("convertion error: {e:?}"))
+        })?;
+
+    Ok(())
 }

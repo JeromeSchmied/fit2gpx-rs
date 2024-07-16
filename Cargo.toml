@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = ".fit to .gpx converter"
-keywords = ["garmin", "fit", "cli"]
+keywords = ["garmin", "fit", "cli", "gpx"]
 categories = ["command-line-interface"]
 repository = "https://github.com/jeromeschmied/fit2gpx-rs"
 license = "MIT"
@@ -17,5 +17,6 @@ clap = { version = "4.5.8", features = ["derive"] }
 fit_file = "0.6.0"
 geo-types = "0.7.13"
 gpx = "0.10.0"
-srtm = { version = "0.1.1", path = "../srtm" }
+rayon = "1.10.0"
+srtm = { git = "https://github.com/jeromeschmied/srtm", version = "0.2.1" }
 time = { version = "0.3.36", default-features = false }
