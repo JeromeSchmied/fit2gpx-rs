@@ -131,9 +131,7 @@ fn read_fit(fit: &str) -> Res<Context> {
     }
     cx.track_segment.points.retain(|wp| {
         let (x, y) = wp.point().x_y();
-        (if no_00_remains { !is_00(wp) } else { true })
-            && (-90. ..90.).contains(&y)
-            && (-180. ..180.).contains(&x)
+        (!no_00_remains || !is_00(wp)) && (-90. ..90.).contains(&y) && (-180. ..180.).contains(&x)
     });
     Ok(cx)
 }
@@ -240,11 +238,7 @@ fn main() -> Res<()> {
         .par_iter()
         .filter(|f| {
             f.ends_with(".fit")
-                && (if !conf.overwrite {
-                    !PathBuf::from(f.replace(".fit", ".gpx")).exists()
-                } else {
-                    true
-                })
+                && (conf.overwrite || !PathBuf::from(f.replace(".fit", ".gpx")).exists())
         })
         .flat_map(|f| read_fit(f).inspect_err(|e| eprintln!("read error: {e:?}")))
         .collect::<Vec<_>>();

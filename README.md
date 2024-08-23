@@ -4,8 +4,8 @@
 
 -   have [Rust](https://rustup.rs)
 
--   with `cargo` from [crates.io](https://crates.io): `cargo install fit2gpx`
 -   with `cargo` from [github](https://github.com/jeromeschmied): `cargo install --git "https://github.com/jeromeschmied/fit2gpx-rs"`
+<!-- -   with `cargo` from [crates.io](https://crates.io): `cargo install fit2gpx` -->
 
 -   with `cargo` and `git` from [github](https://github.com/jeromeschmied):
 
@@ -26,7 +26,7 @@ if you also want to add elevation data, as the `.fit` file didn't contain any, f
 
 ## Purpose
 
-This is a simple Rust library and binary for converting .FIT files to .GPX files.
+This is a simple Rust `todo!("library")` and binary for converting .FIT files to .GPX files.
 A **_faster_** alternative to the great [**_fit2gpx_**](https://github.com/dodo-saba/fit2gpx)
 
 -   [FIT](https://developer.garmin.com/fit/overview/) is a GIS data file format used by Garmin GPS sport devices and Garmin software
