@@ -82,7 +82,3 @@ Yes.
 -   [gpx](https://crates.io/crates/gpx)
 -   [clap](https://crates.io/crates/clap)
 -   [rayon](https://crates.io/crates/rayon)
-
-```
-
-```
