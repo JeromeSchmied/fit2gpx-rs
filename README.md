@@ -62,7 +62,7 @@ Yes.
 ## How to add elevation data
 
 -   first of all, have srtm data: `.hgt` files downloaded
-    one great source is [Sonny's collection](https://sonny.4lima.de/), it's only for Europe though
+    one great source is [Sonny's collection](https://sonny.4lima.de/), only for Europe though
 -   then unzip everything, place all of the `.hgt` files to a single directory
 -   set `$ELEV_DATA_DIR` to that very directory or pass `--elev_data_dir ~/my_elevation_data_dir`
 -   make sure that `elevation` feature is enabled, _it's the default_
