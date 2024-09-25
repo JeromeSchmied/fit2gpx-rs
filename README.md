@@ -35,7 +35,7 @@ short:
 fit2gpx::convert_file("walk.fit").unwrap();
 ```
 
-see [docs](https://docs.rs/crates/fit2gpx) or [examples](https://github.com/jeromeschmied/fit2gpx-rs/tree/main/examples) for more detailed usage
+see [docs](https://docs.rs/crate/fit2gpx) or [examples](https://github.com/jeromeschmied/fit2gpx-rs/tree/main/examples) for more detailed usage
 
 ## Purpose
 
