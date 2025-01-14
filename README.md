@@ -2,6 +2,13 @@
 
 ## Installation
 
+### download binary
+
+> [!NOTE]
+> soon binary releases will be provided for linux, macos and windows
+
+### build
+
 1.  have a Rust supported platform, eg.: linux, macos, windows
 2.  have [Rust](https://rust-lang.org) installed
 3.  install
@@ -15,9 +22,6 @@ cd fit2gpx-rs
 cargo install --locked --path .
 # without installing to ...cargo/bin/fit2gpx: cargo r (--release) -- -h
 ```
-
-> [!NOTE]
-> soon binary releases will be provided for linux, macos and windows
 
 ## Usage
 
