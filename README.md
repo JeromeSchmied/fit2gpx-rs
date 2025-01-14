@@ -9,12 +9,12 @@
     -   with `cargo` from [source](https://github.com/jeromeschmied/fit2gpx-rs): `cargo install --locked --git "https://github.com/jeromeschmied/fit2gpx-rs"`
     -   with `git` and `cargo`: cloning, then building from [source](https://github.com/jeromeschmied/fit2gpx-rs):
 
-> ```sh
-> git clone --depth 1 "https://github.com/jeromeschmied/fit2gpx-rs"
-> cd fit2gpx-rs
-> cargo install --locked --path .
-> # without installing to ...cargo/bin/fit2gpx: cargo r (--release) -- -h
-> ```
+```sh
+git clone --depth 1 "https://github.com/jeromeschmied/fit2gpx-rs"
+cd fit2gpx-rs
+cargo install --locked --path .
+# without installing to ...cargo/bin/fit2gpx: cargo r (--release) -- -h
+```
 
 > [!NOTE]
 > soon binary releases will be provided for linux, macos and windows
