@@ -8,10 +8,10 @@ use std::path::PathBuf;
 struct Args {
     pub files: Vec<PathBuf>,
     #[cfg(feature = "elevation")]
-    #[arg(short = 'd', long)]
-    pub elev_data_dir: Option<PathBuf>,
+    #[arg(short = 'd', long, env)]
+    pub elev_data_dir: PathBuf,
     #[cfg(feature = "elevation")]
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = false, requires = "elev_data_dir")]
     pub add_elevation: bool,
     #[arg(short, long, default_value_t = false)]
     pub overwrite: bool,

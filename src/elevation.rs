@@ -22,21 +22,13 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
 // TODO: docs
 pub fn read_needed_tiles(
     needs: &[(i32, i32)],
-    elev_data_dir: Option<impl AsRef<Path>>,
+    elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
     if needs.is_empty() {
         return vec![];
     }
+    let elev_data_dir = elev_data_dir.as_ref();
 
-    let elev_data_dir = if let Some(arg_data_dir) = &elev_data_dir {
-        arg_data_dir.as_ref()
-    } else if let Some(env_data_dir) = option_env!("ELEV_DATA_DIR") {
-        Path::new(env_data_dir)
-    } else if let Some(env_data_dir) = option_env!("elev_data_dir") {
-        Path::new(env_data_dir)
-    } else {
-        panic!("no elevation data dir is passed as an arg nor set as an environment variable: ELEV_DATA_DIR");
-    };
     needs
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
@@ -79,7 +71,7 @@ pub fn get_all_elev_data<'a>(
 /// use fit2gpx::elevation::*;
 ///
 /// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
-/// let elev_data_dir = Some("/home/me/Downloads/srtm_data");
+/// let elev_data_dir = "/home/me/Downloads/srtm_data";
 /// let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
 /// let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
 /// let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
