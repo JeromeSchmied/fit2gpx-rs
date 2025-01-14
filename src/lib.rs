@@ -140,7 +140,7 @@ impl Fit {
 
     #[cfg(feature = "elevation")]
     /// add elevation data to the `fit` file, using srtm data from `elev_data_dir`
-    pub fn add_elev(fit: &mut Fit, elev_data_dir: Option<impl AsRef<Path>>) {
+    pub fn add_elev(fit: &mut Fit, elev_data_dir: impl AsRef<Path>) {
         use elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
