@@ -1,20 +1,23 @@
-# [fit2gpx-rs](https://github.com/jeromeschmied/fit2gpx-rs): convert fit to gpx files efficiently, add elevation data if you'd like
+# [fit2gpx-rs](https://github.com/jeromeschmied/fit2gpx-rs): convert .fit to .gpx files efficiently
 
 ## Installation
 
--   have [Rust](https://rust-lang.org)
--   with `cargo` from [crates.io](https://crates.io): `cargo install fit2gpx`
--   with `cargo` from [github](https://github.com/jeromeschmied): `cargo install --locked --git "https://github.com/jeromeschmied/fit2gpx-rs"`
--   with `cargo` and `git` from [github](https://github.com/jeromeschmied):
+1.  have a Rust supported platform, eg.: linux, macos, windows
+2.  have [Rust](https://rust-lang.org) installed
+3.  install
+    -   with `cargo` from [crates.io](https://crates.io): `cargo install fit2gpx`
+    -   with `cargo` from [source](https://github.com/jeromeschmied/fit2gpx-rs): `cargo install --locked --git "https://github.com/jeromeschmied/fit2gpx-rs"`
+    -   with `git` and `cargo`: cloning, then building from [source](https://github.com/jeromeschmied/fit2gpx-rs):
 
-```sh
-git clone --depth 1 "https://github.com/jeromeschmied/fit2gpx-rs"
-cd fit2gpx-rs
-cargo install --locked --path .
-```
+> ```sh
+> git clone --depth 1 "https://github.com/jeromeschmied/fit2gpx-rs"
+> cd fit2gpx-rs
+> cargo install --locked --path .
+> # without installing to ...cargo/bin/fit2gpx: cargo r (--release) -- -h
+> ```
 
 > [!NOTE]
-> soon there might also be binary releases
+> soon binary releases will be provided for linux, macos and windows
 
 ## Usage
 
@@ -40,6 +43,8 @@ see [docs](https://docs.rs/crate/fit2gpx) or [examples](https://github.com/jerom
 ## Purpose
 
 This is a simple Rust library and binary for converting .FIT files to .GPX files.
+I've mostly written it, being fed up waiting for conversion of a strava bulk export while creating
+awesome plots with this great tool: [stravavis](https://github.com/marcusvolz/strava_py).
 
 A **_significantly_** faster alternative to the great [**_fit2gpx_**](https://github.com/dodo-saba/fit2gpx)
 with the ability to add elevation data while converting
@@ -51,12 +56,12 @@ with the ability to add elevation data while converting
 
 Yes.
 
-## Why another one
+## Why
 
--   it's about 80 times as fast (single file, no elevation added)
--   it's way faster with multi-file execution too
+-   it's damn fast
 -   it can add elevation data
--   Rust library
+-   should be fairly well maintained
+-   providing Rust library
 -   it's fun
 
 ## How to add elevation data
@@ -72,15 +77,15 @@ Yes.
 
 ### it doesn't support strava bulk-export stuff
 
--   unzipping `.gz` files. solution: in your activities directory run `gzip -d *.gz`
+-   unzipping `.gz` files. __solution__: in your activities directory run `gzip -d *.gz`
 -   adding metadata to gpx files from the `activities.csv` file
 
 ## Direct dependencies
 
 <!-- -   [coordinate-altitude](https://github.com/jeromeschmied/coordinate-altitude) -->
 
--   [srtm](https://github.com/jeromeschmied/srtm_reader)
--   [fit_file](https://crates.io/crates/fit_file)
--   [gpx](https://crates.io/crates/gpx)
--   [clap](https://crates.io/crates/clap)
--   [rayon](https://crates.io/crates/rayon)
+-   [fit_file](https://crates.io/crates/fit_file): reading .fit
+-   [gpx](https://crates.io/crates/gpx): writing .gpx
+-   [clap](https://crates.io/crates/clap): argument parsing
+-   [rayon](https://crates.io/crates/rayon): multi-threadedness
+-   [srtm](https://github.com/jeromeschmied/srtm_reader): reading elevation data from SRTM files
