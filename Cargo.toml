@@ -15,7 +15,7 @@ license = "MIT"
 [dependencies]
 clap = { version = "4.5.8", features = ["derive"] }
 fit_file = "0.6.0"
-geo-types = "0.7.13"
+geo-types = "0.7.14"
 gpx = "0.10.0"
 rayon = "1.10.0"
 srtm_reader = { version = "0.3.0", optional = true }
