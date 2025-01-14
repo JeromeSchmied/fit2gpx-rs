@@ -75,13 +75,13 @@ pub fn get_all_elev_data<'a>(
 ///
 /// using the following order, it should be safe
 ///
-/// ```
+/// ```no_run
 /// use fit2gpx::elevation::*;
 ///
-/// let mut fit = fit2gpx::FitContext::from_file("evening walk.gpx").unwrap();
+/// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
 /// let elev_data_dir = Some("/home/me/Downloads/srtm_data");
 /// let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
-/// let needed_tiles = needed_tiles(&needed_tile_coords, elev_data_dir);
+/// let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
 /// let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
 ///
 /// add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data);
