@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
+      
+      - name: Check typos
+        uses: crate-ci/typos@v1.29.4
 
       - name: Build in release mode
         run: cargo build --release --verbose
