@@ -55,7 +55,7 @@ pub struct Fit {
     pub track_segment: TrackSegment,
 }
 impl Fit {
-    /// no need to clone the whole [`FitContext`], only the `file_name`: a [`String`]
+    /// no need to clone the whole [`Fit`], only the `file_name`: a [`String`]
     pub fn file_name(&self) -> String {
         self.file_name.to_owned()
     }
@@ -66,7 +66,7 @@ impl Fit {
             ..self
         }
     }
-    /// create a [`FitContext`] from a `path`, where a fit file lies
+    /// create a [`Fit`] from a `path`, where a fit file lies
     // TODO: docs
     pub fn from_file(fit_path: impl AsRef<Path>) -> Res<Self> {
         let file = std::fs::File::open(&fit_path)?;
