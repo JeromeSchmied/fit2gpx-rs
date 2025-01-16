@@ -13,16 +13,18 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.8", features = ["derive"] }
+clap = { version = "4.5.18", features = ["derive"] }
+env_logger = "0.11.5"
 fit_file = "0.6.0"
 geo-types = "0.7.13"
 gpx = "0.10.0"
+log = "0.4.22"
 rayon = "1.10.0"
-srtm_reader = { version = "0.3.0", optional = true }
+srtm_reader = { version = "0.3.1", optional = true }
 time = { version = "0.3.36", default-features = false }
 
 [patch.crates-io]
-srtm_reader = { git = "https://github.com/jeromeschmied/srtm_reader" }
+srtm_reader = { path = "../srtm_reader" }
 
 [features]
 default = ["elevation"]

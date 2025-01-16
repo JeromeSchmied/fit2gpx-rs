@@ -3,7 +3,7 @@ use fit2gpx::{elevation::*, Fit, Res};
 use rayon::prelude::*;
 use std::path::PathBuf;
 
-#[derive(Parser, Clone)]
+#[derive(Parser, Clone, Debug, PartialEq, Eq)]
 #[command(version, about, long_about = None)]
 struct Args {
     pub files: Vec<PathBuf>,
@@ -20,6 +20,10 @@ struct Args {
 fn main() -> Res<()> {
     // collecting cli args
     let conf = Args::parse();
+    // TODO: appropriate logging
+    dbg!(&conf.elev_data_dir);
+    dbg!(&conf.add_elevation);
+    dbg!(&conf.overwrite);
 
     // reading all .fit files into memory, considering whether it should be overwritten
     let all_fit = conf
@@ -27,7 +31,7 @@ fn main() -> Res<()> {
         .par_iter()
         .filter(|f| {
             f.extension().is_some_and(|x| x == "fit")
-                && (conf.overwrite || !f.with_extension(".gpx").exists())
+                && (conf.overwrite || !f.with_extension("gpx").exists())
         })
         .flat_map(|f| Fit::from_file(f).inspect_err(|e| eprintln!("read error: {e:?}")))
         .collect::<Vec<_>>();
@@ -61,11 +65,21 @@ fn main() -> Res<()> {
         .try_for_each(|mut fit: Fit| -> Result<(), &'static str> {
             #[cfg(feature = "elevation")]
             if conf.add_elevation {
-                add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data);
+                dbg!(&fit.file_name());
+                add_elev_unchecked(
+                    &mut fit.track_segment.points,
+                    &all_elev_data,
+                    conf.overwrite,
+                );
             }
-            fit.save_to_gpx()
-                .inspect_err(|e| eprintln!("conversion error: {e:?}"))
-                .map_err(|_| "conversion error")
+            if !fit.track_segment.points.is_empty() {
+                fit.save_to_gpx()
+                    .inspect_err(|e| eprintln!("conversion error: {e:?}"))
+                    .map_err(|_| "conversion error")
+            } else {
+                eprintln!("{:?}: empty trkseg, ignoring...", fit.file_name());
+                Ok(())
+            }
         })?;
 
     Ok(())

@@ -14,7 +14,7 @@
 // TODO: proper docs
 
 use crate::utils::*;
-use fit_file::{fit_file, FitFieldValue, FitRecordMsg, FitSessionMsg};
+use fit_file::{fit_file, FitFieldValue, FitRecordMsg};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
 use std::{fs::File, io::BufWriter, path::Path};
 
@@ -50,7 +50,6 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
 #[derive(Default, Clone)]
 pub struct Fit {
     file_name: String,
-    sum00: u32,
     num_records_processed: u16,
     pub track_segment: TrackSegment,
 }
@@ -86,11 +85,11 @@ impl Fit {
         data: &mut Fit,
     ) {
         if global_message_num == fit_file::GLOBAL_MSG_NUM_SESSION {
-            let msg = FitSessionMsg::new(fields);
-            let sport_names = fit_file::init_sport_name_map();
-            let sport_id = msg.sport.unwrap();
+            // let msg = FitSessionMsg::new(fields);
+            // let sport_names = fit_file::init_sport_name_map();
+            // let sport_id = msg.sport.unwrap();
 
-            println!("Sport: {}", sport_names.get(&sport_id).unwrap());
+            // println!("Sport: {}", sport_names.get(&sport_id).unwrap());
         } else if global_message_num == fit_file::GLOBAL_MSG_NUM_RECORD {
             let mut msg = FitRecordMsg::new(fields);
 
@@ -100,10 +99,6 @@ impl Fit {
                 assert_eq!(timestamp, ts);
             } else {
                 msg.timestamp = Some(timestamp);
-            }
-
-            if utils::no_lat_lon(&msg) {
-                data.sum00 += 1;
             }
 
             let wp = frm_to_gwp(msg);
@@ -118,35 +113,27 @@ impl Fit {
         let mut bufread = std::io::BufReader::new(reader);
         fit_file::read(&mut bufread, Self::callback, &mut fit)?;
 
-        let percent_00 = fit.sum00 as f32 / fit.track_segment.points.len() as f32;
-        let no_00_remains = fit.sum00 > 0 && percent_00 < 0.9;
-        if no_00_remains {
-            eprintln!("less than 90% ({} out of {} = {percent_00}) doesn't contain latitude and longitude => deleting these points",
-             fit.sum00, fit.track_segment.points.len());
-        }
         fit.track_segment.points.retain(|wp| {
             let (x, y) = wp.point().x_y();
-            (!no_00_remains || !is_00(wp))
-                && (-90. ..90.).contains(&y)
-                && (-180. ..180.).contains(&x)
+            !is_00(wp) && (-90. ..90.).contains(&y) && (-180. ..180.).contains(&x)
         });
         Ok(fit)
     }
     pub fn save_to_gpx(self) -> Res<()> {
-        let fname = self.file_name();
+        let fname = self.file_name().replace(".fit", ".gpx");
         let gpx: Gpx = self.into();
         write_gpx_to_file(gpx, &fname)
     }
 
     #[cfg(feature = "elevation")]
     /// add elevation data to the `fit` file, using srtm data from `elev_data_dir`
-    pub fn add_elev(fit: &mut Fit, elev_data_dir: Option<impl AsRef<Path>>) {
+    pub fn add_elev(fit: &mut Fit, elev_data_dir: Option<impl AsRef<Path>>, overwrite: bool) {
         use elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
         let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
 
-        add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data);
+        add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, overwrite);
     }
 }
 impl From<Fit> for Gpx {

@@ -78,17 +78,18 @@ pub fn get_all_elev_data<'a>(
 /// ```
 /// use fit2gpx::elevation::*;
 ///
-/// let mut fit = fit2gpx::FitContext::from_file("evening walk.gpx").unwrap();
+/// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
 /// let elev_data_dir = Some("/home/me/Downloads/srtm_data");
-/// let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
-/// let needed_tiles = needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
+/// let needed_tile_coords = fit2gpx::elevation::needed_tile_coords(&fit.track_segment.points);
+/// let needed_tiles = fit2gpx::elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
+/// let all_elev_data = fit2gpx::elevation::get_all_elev_data(&needed_tile_coords, &needed_tiles);
 ///
-/// add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data);
+/// add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],
     elev_data: &HashMap<&(i32, i32), &srtm_reader::Tile>,
+    overwrite: bool,
 ) {
     // coord is x,y but we need y,x
     let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {
@@ -96,12 +97,13 @@ pub fn add_elev_unchecked(
         (y, x).into()
     };
     wps.into_par_iter()
-        .filter(|wp| wp.elevation.is_none() && !is_00(wp))
+        .filter(|wp| (wp.elevation.is_none() || overwrite) && !is_00(wp))
         .for_each(|wp| {
             let coord = xy_yx(wp);
             let elev_data = elev_data
                 .get(&coord.trunc())
                 .expect("elevation data must be loaded");
-            wp.elevation = Some(elev_data.get(coord) as f64);
+            let elev = elev_data.get(coord);
+            wp.elevation = elev.map(|x| *x as f64);
         });
 }
