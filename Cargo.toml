@@ -22,7 +22,7 @@ srtm_reader = { version = "0.3.1", optional = true }
 time = { version = "0.3.37", default-features = false }
 
 [patch.crates-io]
-srtm_reader = { git = "https://github.com/jeromeschmied/srtm_reader" }
+srtm_reader = { git = "https://github.com/jeromeschmied/srtm_reader", branch = "many"}
 
 [features]
 default = ["elevation"]

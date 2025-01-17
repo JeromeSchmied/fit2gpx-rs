@@ -350,7 +350,7 @@ dependencies = [
 [[package]]
 name = "srtm_reader"
 version = "0.3.1"
-source = "git+https://github.com/jeromeschmied/srtm_reader#84e934c5ec46370e9c43b98f9f7c253b2f4c1ce5"
+source = "git+https://github.com/jeromeschmied/srtm_reader?branch=many#a45df15c2722ac193a4832909f6f90a78205682d"
 dependencies = [
  "byteorder",
 ]

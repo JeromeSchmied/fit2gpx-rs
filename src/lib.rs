@@ -16,7 +16,11 @@
 use crate::utils::*;
 use fit_file::{fit_file, FitFieldValue, FitRecordMsg};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
-use std::{fs::File, io::BufWriter, path::Path};
+use std::{
+    fs::File,
+    io::BufWriter,
+    path::{Path, PathBuf},
+};
 
 /// universal Result, but not sendable
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
@@ -31,14 +35,13 @@ pub fn convert_file(fit_path: impl AsRef<Path>) -> Res<()> {
     fit.save_to_gpx()
 }
 pub fn convert_fit(read: impl std::io::Read, fname: impl AsRef<Path>) -> Res<()> {
-    let fit = Fit::from_fit(read)?.with_filename(fname.as_ref().to_str().unwrap());
+    let fit = Fit::from_fit(read)?.with_filename(fname.as_ref());
     fit.save_to_gpx()
 }
 
 pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
-    let fpath = Path::new(fname.as_ref());
-    // Create file at path
-    let gpx_file = File::create(fpath)?;
+    // Create file at `fname`
+    let gpx_file = File::create(fname.as_ref())?;
     let buf = BufWriter::new(gpx_file);
 
     // Write to file
@@ -49,29 +52,25 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
 /// Fit Context structure. An instance of this will be passed to the parser and ultimately to the callback function so we can use it for whatever.
 #[derive(Default, Clone)]
 pub struct Fit {
-    file_name: String,
+    pub file_name: PathBuf,
     num_records_processed: u16,
     pub track_segment: TrackSegment,
 }
 impl Fit {
-    /// no need to clone the whole [`FitContext`], only the `file_name`: a [`String`]
-    pub fn file_name(&self) -> String {
-        self.file_name.to_owned()
-    }
     /// add a filename to `self`, create new instance
-    pub fn with_filename(self, fname: impl Into<String>) -> Self {
+    pub fn with_filename(self, fname: impl Into<PathBuf>) -> Self {
         Fit {
             file_name: fname.into(),
             ..self
         }
     }
-    /// create a [`FitContext`] from a `path`, where a fit file lies
+    /// create a [`Fit`] from a `path`, where a fit file lies
     // TODO: docs
     pub fn from_file(fit_path: impl AsRef<Path>) -> Res<Self> {
         let file = std::fs::File::open(&fit_path)?;
         let mut bufread = std::io::BufReader::new(file);
 
-        Ok(Self::from_fit(&mut bufread)?.with_filename(fit_path.as_ref().to_str().unwrap()))
+        Ok(Self::from_fit(&mut bufread)?.with_filename(fit_path.as_ref()))
     }
 
     /// Called for each record message as it is being processed.
@@ -120,14 +119,14 @@ impl Fit {
         Ok(fit)
     }
     pub fn save_to_gpx(self) -> Res<()> {
-        let fname = self.file_name().replace(".fit", ".gpx");
+        let fname = self.file_name.with_extension("gpx");
         let gpx: Gpx = self.into();
         write_gpx_to_file(gpx, &fname)
     }
 
     #[cfg(feature = "elevation")]
     /// add elevation data to the `fit` file, using srtm data from `elev_data_dir`
-    pub fn add_elev(fit: &mut Fit, elev_data_dir: Option<impl AsRef<Path>>, overwrite: bool) {
+    pub fn add_elev(fit: &mut Fit, elev_data_dir: impl AsRef<Path>, overwrite: bool) {
         use elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);

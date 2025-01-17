@@ -22,21 +22,13 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
 // TODO: docs
 pub fn read_needed_tiles(
     needs: &[(i32, i32)],
-    elev_data_dir: Option<impl AsRef<Path>>,
+    elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
     if needs.is_empty() {
         return vec![];
     }
 
-    let elev_data_dir = if let Some(arg_data_dir) = &elev_data_dir {
-        arg_data_dir.as_ref()
-    } else if let Some(env_data_dir) = option_env!("ELEV_DATA_DIR") {
-        Path::new(env_data_dir)
-    } else if let Some(env_data_dir) = option_env!("elev_data_dir") {
-        Path::new(env_data_dir)
-    } else {
-        panic!("no elevation data dir is passed as an arg nor set as an environment variable: ELEV_DATA_DIR");
-    };
+    let elev_data_dir = elev_data_dir.as_ref();
     needs
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
@@ -75,16 +67,16 @@ pub fn get_all_elev_data<'a>(
 ///
 /// using the following order, it should be safe
 ///
-/// ```
-/// use fit2gpx::elevation::*;
+/// ```no_run
+/// use fit2gpx::elevation;
 ///
 /// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
-/// let elev_data_dir = Some("/home/me/Downloads/srtm_data");
-/// let needed_tile_coords = fit2gpx::elevation::needed_tile_coords(&fit.track_segment.points);
-/// let needed_tiles = fit2gpx::elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = fit2gpx::elevation::get_all_elev_data(&needed_tile_coords, &needed_tiles);
+/// let elev_data_dir = "~/Downloads/srtm_data";
+/// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
+/// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
+/// let all_elev_data = elevation::get_all_elev_data(&needed_tile_coords, &needed_tiles);
 ///
-/// add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
+/// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],

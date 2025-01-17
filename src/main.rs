@@ -8,10 +8,10 @@ use std::path::PathBuf;
 struct Args {
     pub files: Vec<PathBuf>,
     #[cfg(feature = "elevation")]
-    #[arg(short = 'd', long)]
-    pub elev_data_dir: Option<PathBuf>,
+    #[arg(short = 'd', long, env, default_value = "/tmp")]
+    pub elev_data_dir: PathBuf,
     #[cfg(feature = "elevation")]
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = false, requires = "elev_data_dir")]
     pub add_elevation: bool,
     #[arg(short, long, default_value_t = false)]
     pub overwrite: bool,
@@ -65,7 +65,7 @@ fn main() -> Res<()> {
         .try_for_each(|mut fit: Fit| -> Result<(), &'static str> {
             #[cfg(feature = "elevation")]
             if conf.add_elevation {
-                dbg!(&fit.file_name());
+                dbg!(&fit.file_name);
                 add_elev_unchecked(
                     &mut fit.track_segment.points,
                     &all_elev_data,
@@ -77,7 +77,7 @@ fn main() -> Res<()> {
                     .inspect_err(|e| eprintln!("conversion error: {e:?}"))
                     .map_err(|_| "conversion error")
             } else {
-                eprintln!("{:?}: empty trkseg, ignoring...", fit.file_name());
+                eprintln!("{:?}: empty trkseg, ignoring...", fit.file_name);
                 Ok(())
             }
         })?;
