@@ -182,7 +182,7 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "fit2gpx"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "fit_file",
@@ -349,8 +349,8 @@ dependencies = [
 
 [[package]]
 name = "srtm_reader"
-version = "0.3.1"
-source = "git+https://github.com/jeromeschmied/srtm_reader#84e934c5ec46370e9c43b98f9f7c253b2f4c1ce5"
+version = "0.4.0"
+source = "git+https://github.com/jeromeschmied/srtm_reader#84b357165a524a3a180ce90e96152ed38180c13c"
 dependencies = [
  "byteorder",
 ]

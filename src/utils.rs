@@ -48,10 +48,6 @@ pub(crate) fn frm_to_gwp(frm: FitRecordMsg) -> Waypoint {
 }
 
 // TODO: docs
-pub(crate) fn no_lat_lon(frm: &FitRecordMsg) -> bool {
-    frm.position_long.is_none() && frm.position_lat.is_none()
-}
-// TODO: docs
 pub(crate) fn is_00(wp: &Waypoint) -> bool {
     wp.point().x_y() == (0., 0.)
 }

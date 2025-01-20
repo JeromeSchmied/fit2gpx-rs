@@ -27,8 +27,8 @@ pub fn read_needed_tiles(
     if needs.is_empty() {
         return vec![];
     }
-    let elev_data_dir = elev_data_dir.as_ref();
 
+    let elev_data_dir = elev_data_dir.as_ref();
     needs
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
@@ -44,7 +44,11 @@ pub fn get_all_elev_data<'a>(
     needs: &'a [(i32, i32)],
     tiles: &'a [srtm_reader::Tile],
 ) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
-    assert_eq!(needs.len(), tiles.len());
+    assert_eq!(
+        needs.len(),
+        tiles.len(),
+        "number of needed tiles and loaded tiles not equal"
+    );
     needs
         .par_iter()
         .enumerate()
@@ -68,19 +72,20 @@ pub fn get_all_elev_data<'a>(
 /// using the following order, it should be safe
 ///
 /// ```no_run
-/// use fit2gpx::elevation::*;
+/// use fit2gpx::elevation;
 ///
 /// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
-/// let elev_data_dir = "/home/me/Downloads/srtm_data";
-/// let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
-/// let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
+/// let elev_data_dir = "~/Downloads/srtm_data";
+/// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
+/// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
+/// let all_elev_data = elevation::get_all_elev_data(&needed_tile_coords, &needed_tiles);
 ///
-/// add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data);
+/// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],
     elev_data: &HashMap<&(i32, i32), &srtm_reader::Tile>,
+    overwrite: bool,
 ) {
     // coord is x,y but we need y,x
     let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {
@@ -88,12 +93,13 @@ pub fn add_elev_unchecked(
         (y, x).into()
     };
     wps.into_par_iter()
-        .filter(|wp| wp.elevation.is_none() && !is_00(wp))
+        .filter(|wp| (wp.elevation.is_none() || overwrite) && !is_00(wp))
         .for_each(|wp| {
             let coord = xy_yx(wp);
             let elev_data = elev_data
                 .get(&coord.trunc())
                 .expect("elevation data must be loaded");
-            wp.elevation = Some(elev_data.get(coord) as f64);
+            let elev = elev_data.get(coord);
+            wp.elevation = elev.map(|x| *x as f64);
         });
 }
