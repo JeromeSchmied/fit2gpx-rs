@@ -1,3 +1,4 @@
+use clap::Parser;
 #[cfg(feature = "elevation")]
 use fit2gpx::elevation::*;
 use fit2gpx::{fit::Fit, Res};
@@ -7,7 +8,7 @@ mod args;
 
 fn main() -> Res<()> {
     // collecting cli args
-    let conf = args::Cli::get();
+    let conf = args::Cli::parse();
     // TODO: appropriate logging
     #[cfg(feature = "elevation")]
     {

@@ -14,8 +14,3 @@ pub(crate) struct Cli {
     #[arg(short, long, default_value_t = false)]
     pub overwrite: bool,
 }
-impl Cli {
-    pub fn get() -> Self {
-        Self::parse()
-    }
-}
