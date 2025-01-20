@@ -1,6 +1,7 @@
-use super::*;
+use crate::utils;
+use gpx::Waypoint;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 // TODO: docs
 pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
@@ -11,7 +12,7 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
     };
     // tiles we need
     let mut needs = Vec::new();
-    for wp in wps.iter().filter(|wp| !is_00(wp)).map(trunc) {
+    for wp in wps.iter().filter(|wp| !utils::is_00(wp)).map(trunc) {
         if !needs.contains(&wp) {
             needs.push(wp);
         }
@@ -93,7 +94,7 @@ pub fn add_elev_unchecked(
         (y, x).into()
     };
     wps.into_par_iter()
-        .filter(|wp| (wp.elevation.is_none() || overwrite) && !is_00(wp))
+        .filter(|wp| (wp.elevation.is_none() || overwrite) && !utils::is_00(wp))
         .for_each(|wp| {
             let coord = xy_yx(wp);
             let elev_data = elev_data
