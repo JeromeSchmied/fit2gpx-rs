@@ -1,4 +1,6 @@
-use fit2gpx::{elevation::*, fit::Fit, Res};
+#[cfg(feature = "elevation")]
+use fit2gpx::elevation::*;
+use fit2gpx::{fit::Fit, Res};
 use rayon::prelude::*;
 
 mod args;
@@ -7,8 +9,11 @@ fn main() -> Res<()> {
     // collecting cli args
     let conf = args::Cli::get();
     // TODO: appropriate logging
-    dbg!(&conf.elev_data_dir);
-    dbg!(&conf.add_elevation);
+    #[cfg(feature = "elevation")]
+    {
+        dbg!(&conf.elev_data_dir);
+        dbg!(&conf.add_elevation);
+    }
     dbg!(&conf.overwrite);
 
     // reading all .fit files into memory, considering whether it should be overwritten
