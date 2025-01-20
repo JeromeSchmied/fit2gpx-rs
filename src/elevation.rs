@@ -44,7 +44,11 @@ pub fn get_all_elev_data<'a>(
     needs: &'a [(i32, i32)],
     tiles: &'a [srtm_reader::Tile],
 ) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
-    assert_eq!(needs.len(), tiles.len());
+    assert_eq!(
+        needs.len(),
+        tiles.len(),
+        "number of needed tiles and loaded tiles not equal"
+    );
     needs
         .par_iter()
         .enumerate()
