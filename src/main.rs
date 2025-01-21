@@ -20,6 +20,7 @@ fn main() -> Res<()> {
         log::info!("should add elevation: {:?}", conf.add_elevation);
         log::info!("elevation data directory: {:?}", conf.elev_data_dir);
     }
+    log::debug!("cli args: {conf:?}");
     log::info!("should overwrite existing gpx: {}", conf.overwrite);
 
     // reading all .fit files into memory, considering whether it should be overwritten

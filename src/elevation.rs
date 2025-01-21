@@ -15,6 +15,7 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
     let mut needs = Vec::new();
     for wp in wps.iter().filter(|wp| !utils::is_00(wp)).map(trunc) {
         if !needs.contains(&wp) {
+            log::debug!("tile for {wp:?} shall be loaded");
             needs.push(wp);
         }
     }

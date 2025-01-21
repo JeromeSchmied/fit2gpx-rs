@@ -15,5 +15,9 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
 }
 // TODO: docs
 pub fn is_00(wp: &Waypoint) -> bool {
-    wp.point().x_y() == (0., 0.)
+    let res = wp.point().x_y() == (0., 0.);
+    if res {
+        log::trace!("{wp:?} is null");
+    }
+    res
 }
