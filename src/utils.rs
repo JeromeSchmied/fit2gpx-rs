@@ -10,9 +10,14 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
 
     // Write to file
     gpx::write(&gpx, buf)?;
+    log::info!("written {:?}", fname.as_ref());
     Ok(())
 }
 // TODO: docs
 pub fn is_00(wp: &Waypoint) -> bool {
-    wp.point().x_y() == (0., 0.)
+    let res = wp.point().x_y() == (0., 0.);
+    if res {
+        log::trace!("{wp:?} is null");
+    }
+    res
 }
