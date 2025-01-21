@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use std::{collections::HashMap, path::Path};
 
 // TODO: docs
+// TODO: consider using BTreeSet instead of Vec
 pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
     // kinda Waypoint to (i32, i32)
     let trunc = |wp: &Waypoint| -> (i32, i32) {
@@ -25,6 +26,8 @@ pub fn read_needed_tiles(
     needs: &[(i32, i32)],
     elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
+    log::info!("reading needed tiles into memory");
+    log::debug!("needed tiles' coordinates are: {needs:?}");
     if needs.is_empty() {
         return vec![];
     }
@@ -34,7 +37,10 @@ pub fn read_needed_tiles(
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
         .map(|t| elev_data_dir.join(t))
-        .map(|p| srtm_reader::Tile::from_file(p).inspect_err(|e| log::error!("error: {e:#?}")))
+        .map(|p| {
+            srtm_reader::Tile::from_file(&p)
+                .inspect_err(|e| log::error!("error while reading {p:?} into memory: {e:#?}"))
+        })
         .flatten() // ignore the ones with an error
         .collect::<Vec<_>>()
 }
@@ -45,6 +51,8 @@ pub fn get_all_elev_data<'a>(
     needs: &'a [(i32, i32)],
     tiles: &'a [srtm_reader::Tile],
 ) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
+    log::info!("reading all coordinates' elevation into memory");
+    log::debug!("elevation needed for coordinates: {needs:?}");
     assert_eq!(
         needs.len(),
         tiles.len(),

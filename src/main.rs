@@ -32,8 +32,10 @@ fn main() -> Res<()> {
             let remains = is_fit && (conf.overwrite || !converted);
             if !remains {
                 log::warn!(
-                    "ignoring {f:?}: extension is fit: {is_fit:?}, converted already: {converted}"
+                    "ignoring {f:?}: extension is fit: {is_fit}, converted already: {converted}"
                 );
+            } else {
+                log::debug!("loading {f:?} into memory");
             }
             remains
         })
@@ -43,6 +45,7 @@ fn main() -> Res<()> {
     #[cfg(feature = "elevation")]
     // collecting all needed tiles' coordinates, if adding elevation
     let all_needed_tile_coords = if conf.add_elevation {
+        log::info!("loading needed tiles' coordinates");
         let mut all = all_fit
             .par_iter()
             .flat_map(|fit| needed_tile_coords(&fit.track_segment.points))
@@ -69,20 +72,21 @@ fn main() -> Res<()> {
         .try_for_each(|mut fit: Fit| -> Result<(), &'static str> {
             #[cfg(feature = "elevation")]
             if conf.add_elevation {
-                log::debug!("adding elevation for {:?}", fit.file_name);
+                log::debug!("adding elevation to {:?}", fit.file_name);
                 add_elev_unchecked(
                     &mut fit.track_segment.points,
                     &all_elev_data,
                     conf.overwrite,
                 );
             }
-            if !fit.track_segment.points.is_empty() {
+            log::info!("converting {:?}", fit.file_name);
+            if fit.track_segment.points.is_empty() {
+                log::warn!("{:?}: empty trkseg, ignoring...", fit.file_name);
+                Ok(())
+            } else {
                 fit.save_to_gpx()
                     .inspect_err(|e| log::error!("conversion error: {e:?}"))
                     .map_err(|_| "conversion error")
-            } else {
-                log::info!("{:?}: empty trkseg, ignoring...", fit.file_name);
-                Ok(())
             }
         })?;
 

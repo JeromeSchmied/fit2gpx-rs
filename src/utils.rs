@@ -10,6 +10,7 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
 
     // Write to file
     gpx::write(&gpx, buf)?;
+    log::info!("written {:?}", fname.as_ref());
     Ok(())
 }
 // TODO: docs
