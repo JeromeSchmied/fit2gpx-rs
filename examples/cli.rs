@@ -1,4 +1,4 @@
 fn main() {
-    fit2gpx::convert_file("afternoon walk with dog.fit").unwrap();
+    fit2gpx::Fit::file_to_gpx("afternoon walk with dog.fit").unwrap();
     println!();
 }

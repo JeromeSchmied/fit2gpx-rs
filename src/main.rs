@@ -1,28 +1,20 @@
 use clap::Parser;
-use fit2gpx::{elevation::*, Fit, Res};
+#[cfg(feature = "elevation")]
+use fit2gpx::elevation::*;
+use fit2gpx::{fit::Fit, Res};
 use rayon::prelude::*;
-use std::path::PathBuf;
 
-#[derive(Parser, Clone, Debug, PartialEq, Eq)]
-#[command(version, about, long_about = None)]
-struct Args {
-    pub files: Vec<PathBuf>,
-    #[cfg(feature = "elevation")]
-    #[arg(short = 'd', long, env, default_value = "/tmp")]
-    pub elev_data_dir: PathBuf,
-    #[cfg(feature = "elevation")]
-    #[arg(short, long, default_value_t = false, requires = "elev_data_dir")]
-    pub add_elevation: bool,
-    #[arg(short, long, default_value_t = false)]
-    pub overwrite: bool,
-}
+mod args;
 
 fn main() -> Res<()> {
     // collecting cli args
-    let conf = Args::parse();
+    let conf = args::Cli::parse();
     // TODO: appropriate logging
-    dbg!(&conf.elev_data_dir);
-    dbg!(&conf.add_elevation);
+    #[cfg(feature = "elevation")]
+    {
+        dbg!(&conf.elev_data_dir);
+        dbg!(&conf.add_elevation);
+    }
     dbg!(&conf.overwrite);
 
     // reading all .fit files into memory, considering whether it should be overwritten
