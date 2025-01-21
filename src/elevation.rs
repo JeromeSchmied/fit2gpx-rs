@@ -34,7 +34,7 @@ pub fn read_needed_tiles(
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
         .map(|t| elev_data_dir.join(t))
-        .map(|p| srtm_reader::Tile::from_file(p).inspect_err(|e| eprintln!("error: {e:#?}")))
+        .map(|p| srtm_reader::Tile::from_file(p).inspect_err(|e| log::error!("error: {e:#?}")))
         .flatten() // ignore the ones with an error
         .collect::<Vec<_>>()
 }
@@ -55,7 +55,7 @@ pub fn get_all_elev_data<'a>(
         .enumerate()
         .map(|(i, coord)| (coord, tiles.get(i).unwrap()))
         .collect::<HashMap<_, _>>()
-    // eprintln!("loaded elevation data: {:?}", all_elev_data.keys());
+    // log::debug!("loaded elevation data: {:?}", all_elev_data.keys());
 }
 
 /// add elevation to all `wps` using `elev_data`, in parallel

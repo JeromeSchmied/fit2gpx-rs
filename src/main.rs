@@ -7,25 +7,37 @@ use rayon::prelude::*;
 mod args;
 
 fn main() -> Res<()> {
+    // env_logger::init();
+    env_logger::Builder::default()
+        .filter(None, log::LevelFilter::Info)
+        .init();
+
     // collecting cli args
     let conf = args::Cli::parse();
     // TODO: appropriate logging
     #[cfg(feature = "elevation")]
     {
-        dbg!(&conf.elev_data_dir);
-        dbg!(&conf.add_elevation);
+        log::info!("should add elevation: {:?}", conf.add_elevation);
+        log::info!("elevation data directory: {:?}", conf.elev_data_dir);
     }
-    dbg!(&conf.overwrite);
+    log::info!("should overwrite existing gpx: {}", conf.overwrite);
 
     // reading all .fit files into memory, considering whether it should be overwritten
     let all_fit = conf
         .files
         .par_iter()
         .filter(|f| {
-            f.extension().is_some_and(|x| x == "fit")
-                && (conf.overwrite || !f.with_extension("gpx").exists())
+            let is_fit = f.extension().is_some_and(|x| x == "fit");
+            let converted = f.with_extension("gpx").exists();
+            let remains = is_fit && (conf.overwrite || !converted);
+            if !remains {
+                log::warn!(
+                    "ignoring {f:?}: extension is fit: {is_fit:?}, converted already: {converted}"
+                );
+            }
+            remains
         })
-        .flat_map(|f| Fit::from_file(f).inspect_err(|e| eprintln!("read error: {e:?}")))
+        .flat_map(|f| Fit::from_file(f).inspect_err(|e| log::error!("read error: {e:?}")))
         .collect::<Vec<_>>();
 
     #[cfg(feature = "elevation")]
@@ -57,7 +69,7 @@ fn main() -> Res<()> {
         .try_for_each(|mut fit: Fit| -> Result<(), &'static str> {
             #[cfg(feature = "elevation")]
             if conf.add_elevation {
-                dbg!(&fit.file_name);
+                log::debug!("adding elevation for {:?}", fit.file_name);
                 add_elev_unchecked(
                     &mut fit.track_segment.points,
                     &all_elev_data,
@@ -66,10 +78,10 @@ fn main() -> Res<()> {
             }
             if !fit.track_segment.points.is_empty() {
                 fit.save_to_gpx()
-                    .inspect_err(|e| eprintln!("conversion error: {e:?}"))
+                    .inspect_err(|e| log::error!("conversion error: {e:?}"))
                     .map_err(|_| "conversion error")
             } else {
-                eprintln!("{:?}: empty trkseg, ignoring...", fit.file_name);
+                log::info!("{:?}: empty trkseg, ignoring...", fit.file_name);
                 Ok(())
             }
         })?;
