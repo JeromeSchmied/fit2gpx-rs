@@ -7,10 +7,7 @@ use rayon::prelude::*;
 mod args;
 
 fn main() -> Res<()> {
-    // env_logger::init();
-    env_logger::Builder::default()
-        .filter(None, log::LevelFilter::Info)
-        .init();
+    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
     // collecting cli args
     let conf = args::Cli::parse();
