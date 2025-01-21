@@ -13,6 +13,6 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
     Ok(())
 }
 // TODO: docs
-pub(crate) fn is_00(wp: &Waypoint) -> bool {
+pub fn is_00(wp: &Waypoint) -> bool {
     wp.point().x_y() == (0., 0.)
 }

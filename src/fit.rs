@@ -74,7 +74,7 @@ impl Fit {
 impl Fit {
     /// [`fit_file::FitRecordMsg`] to [`gpx::Waypoint`]
     // TODO: support heart-rate, distance, temperature and such extensions, if `gpx` crate does too
-    pub(crate) fn frm_to_gwp(frm: FitRecordMsg) -> Waypoint {
+    fn frm_to_gwp(frm: FitRecordMsg) -> Waypoint {
         let time = frm.timestamp.unwrap_or(0);
         let time = OffsetDateTime::from_unix_timestamp(time.into()).ok();
 
@@ -118,7 +118,7 @@ impl Fit {
     }
     /// Called for each record message as it is being processed.
     // TODO: don't panic
-    pub fn callback(
+    fn callback(
         timestamp: u32,
         global_message_num: u16,
         _local_msg_type: u8,
