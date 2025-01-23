@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use clap::Parser;
 #[cfg(feature = "elevation")]
 use fit2gpx::elevation::*;
@@ -44,16 +46,15 @@ fn main() -> Res<()> {
     // collecting all needed tiles' coordinates, if adding elevation
     let all_needed_tile_coords = if conf.add_elevation {
         log::info!("loading needed tiles' coordinates");
-        let mut all = all_fit
+        let all = all_fit
             .par_iter()
             .flat_map(|fit| needed_tile_coords(&fit.track_segment.points))
-            .collect::<Vec<_>>();
-        all.sort_unstable();
-        all.dedup();
+            .collect::<BTreeSet<_>>();
+        log::debug!("loaded these tiles: {all:?}");
 
         all
     } else {
-        vec![]
+        BTreeSet::new()
     };
     #[cfg(feature = "elevation")]
     // reading all needed tiles to memory

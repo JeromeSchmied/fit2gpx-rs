@@ -1,30 +1,29 @@
 use crate::utils;
 use gpx::Waypoint;
 use rayon::prelude::*;
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::{BTreeSet, HashMap},
+    path::Path,
+};
 
 // TODO: docs
 // TODO: consider using BTreeSet instead of Vec
-pub fn needed_tile_coords(wps: &[Waypoint]) -> Vec<(i32, i32)> {
+pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<(i32, i32)> {
     // kinda Waypoint to (i32, i32)
     let trunc = |wp: &Waypoint| -> (i32, i32) {
         let (x, y) = wp.point().x_y();
         (y.trunc() as i32, x.trunc() as i32)
     };
     // tiles we need
-    let mut needs = Vec::new();
-    for wp in wps.iter().filter(|wp| !utils::is_00(wp)).map(trunc) {
-        if !needs.contains(&wp) {
-            log::debug!("tile for {wp:?} shall be loaded");
-            needs.push(wp);
-        }
-    }
-    needs
+    wps.par_iter()
+        .filter(|wp| !utils::is_00(wp))
+        .map(trunc)
+        .collect()
 }
 
 // TODO: docs
 pub fn read_needed_tiles(
-    needs: &[(i32, i32)],
+    needs: &BTreeSet<(i32, i32)>,
     elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
     log::info!("reading needed tiles into memory");
@@ -49,7 +48,7 @@ pub fn read_needed_tiles(
 // TODO: docs
 /// index the tiles with their coordinates
 pub fn get_all_elev_data<'a>(
-    needs: &'a [(i32, i32)],
+    needs: &'a BTreeSet<(i32, i32)>,
     tiles: &'a [srtm_reader::Tile],
 ) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
     log::info!("reading all coordinates' elevation into memory");
@@ -60,7 +59,7 @@ pub fn get_all_elev_data<'a>(
         "number of needed tiles and loaded tiles not equal"
     );
     needs
-        .par_iter()
+        .iter()
         .enumerate()
         .map(|(i, coord)| (coord, tiles.get(i).unwrap()))
         .collect::<HashMap<_, _>>()
