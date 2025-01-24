@@ -1,10 +1,9 @@
-use std::collections::BTreeSet;
-
 use clap::Parser;
 #[cfg(feature = "elevation")]
 use fit2gpx::elevation::*;
 use fit2gpx::{fit::Fit, Res};
 use rayon::prelude::*;
+use std::collections::BTreeSet;
 
 mod args;
 
@@ -61,7 +60,7 @@ fn main() -> Res<()> {
     let all_needed_tiles = read_needed_tiles(&all_needed_tile_coords, conf.elev_data_dir);
     #[cfg(feature = "elevation")]
     // merging coordinates and tiles into a `HashMap`
-    let all_elev_data = get_all_elev_data(&all_needed_tile_coords, &all_needed_tiles);
+    let all_elev_data = index_needed_tiles(&all_needed_tile_coords, &all_needed_tiles);
 
     // iterating over all .fit files that are in memory in parallel
     // adding elevation data if requested

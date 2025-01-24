@@ -37,17 +37,16 @@ pub fn read_needed_tiles(
         .par_iter()
         .map(|c| srtm_reader::get_filename(*c))
         .map(|t| elev_data_dir.join(t))
-        .map(|p| {
+        .flat_map(|p| {
             srtm_reader::Tile::from_file(&p)
                 .inspect_err(|e| log::error!("error while reading {p:?} into memory: {e:#?}"))
         })
-        .flatten() // ignore the ones with an error
         .collect::<Vec<_>>()
 }
 // TODO: don't panic
 // TODO: docs
 /// index the tiles with their coordinates
-pub fn get_all_elev_data<'a>(
+pub fn index_needed_tiles<'a>(
     needs: &'a BTreeSet<(i32, i32)>,
     tiles: &'a [srtm_reader::Tile],
 ) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
@@ -87,7 +86,7 @@ pub fn get_all_elev_data<'a>(
 /// let elev_data_dir = "~/Downloads/srtm_data";
 /// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
 /// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = elevation::get_all_elev_data(&needed_tile_coords, &needed_tiles);
+/// let all_elev_data = elevation::index_needed_tiles(&needed_tile_coords, &needed_tiles);
 ///
 /// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```

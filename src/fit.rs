@@ -66,7 +66,7 @@ impl Fit {
         use super::elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
-        let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
+        let all_elev_data = index_needed_tiles(&needed_tile_coords, &needed_tiles);
 
         add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, overwrite);
     }
