@@ -59,7 +59,7 @@ fn main() -> Res<()> {
     let all_needed_tiles = read_needed_tiles(&all_needed_tile_coords, conf.elev_data_dir);
     #[cfg(feature = "elevation")]
     // merging coordinates and tiles into a `HashMap`
-    let all_elev_data = index_tiles(&all_needed_tiles);
+    let all_elev_data = index_tiles(all_needed_tiles);
 
     // iterating over all .fit files that are in memory in parallel
     // adding elevation data if requested

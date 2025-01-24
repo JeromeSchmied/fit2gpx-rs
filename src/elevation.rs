@@ -27,9 +27,6 @@ pub fn read_needed_tiles(
 ) -> Vec<srtm_reader::Tile> {
     log::info!("reading needed tiles into memory");
     log::debug!("needed tiles' coordinates are: {needs:?}");
-    if needs.is_empty() {
-        return vec![];
-    }
 
     let elev_data_dir = elev_data_dir.as_ref();
     needs
@@ -40,15 +37,15 @@ pub fn read_needed_tiles(
             srtm_reader::Tile::from_file(&p)
                 .inspect_err(|e| log::error!("error while reading {p:?} into memory: {e:#?}"))
         })
-        .collect::<Vec<_>>()
+        .collect()
 }
 // TODO: docs
 /// index the tiles with their coordinates
-pub fn index_tiles(tiles: &[srtm_reader::Tile]) -> HashMap<(i32, i32), &srtm_reader::Tile> {
-    log::info!("reading all coordinates' elevation into memory");
-    log::trace!("elevation needed for coordinates: {tiles:?}");
+pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i32, i32), srtm_reader::Tile> {
+    log::info!("indexing all dem tiles");
+    log::trace!("tiles: {tiles:?}");
     tiles
-        .par_iter()
+        .into_par_iter()
         .map(|tile| ((tile.latitude, tile.longitude), tile))
         .collect()
     // log::debug!("loaded elevation data: {:?}", all_elev_data.keys());
@@ -71,13 +68,13 @@ pub fn index_tiles(tiles: &[srtm_reader::Tile]) -> HashMap<(i32, i32), &srtm_rea
 /// let elev_data_dir = "~/Downloads/srtm_data";
 /// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
 /// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = elevation::index_needed_tiles(&needed_tiles);
+/// let all_elev_data = elevation::index_tiles(needed_tiles);
 ///
 /// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],
-    elev_data: &HashMap<(i32, i32), &srtm_reader::Tile>,
+    elev_data: &HashMap<(i32, i32), srtm_reader::Tile>,
     overwrite: bool,
 ) {
     // coord is (x;y) but we need (y;x)
