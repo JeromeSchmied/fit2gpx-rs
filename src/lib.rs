@@ -13,12 +13,11 @@
 //!
 // TODO: proper docs
 
-pub use fit::Fit;
-
 /// universal Result, but not sendable
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 
 #[cfg(feature = "elevation")]
 pub mod elevation;
+pub use fit::Fit;
 pub mod fit;
 mod utils;

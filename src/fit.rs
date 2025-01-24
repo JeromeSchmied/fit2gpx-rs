@@ -9,7 +9,6 @@ use time::OffsetDateTime;
 #[derive(Default, Clone)]
 pub struct Fit {
     pub file_name: PathBuf,
-    num_records_processed: u16,
     pub track_segment: TrackSegment,
 }
 
@@ -126,16 +125,14 @@ impl Fit {
         fields: Vec<FitFieldValue>,
         data: &mut Fit,
     ) {
-        if global_message_num == fit_file::GLOBAL_MSG_NUM_SESSION {
-            // let msg = FitSessionMsg::new(fields);
-            // let sport_names = fit_file::init_sport_name_map();
-            // let sport_id = msg.sport.unwrap();
-
-            // println!("Sport: {}", sport_names.get(&sport_id).unwrap());
-        } else if global_message_num == fit_file::GLOBAL_MSG_NUM_RECORD {
+        // if global_message_num == fit_file::GLOBAL_MSG_NUM_SESSION {
+        // let msg = FitSessionMsg::new(fields);
+        // let sport_names = fit_file::init_sport_name_map();
+        // let sport_id = msg.sport.unwrap();
+        // println!("Sport: {}", sport_names.get(&sport_id).unwrap());
+        // } else
+        if global_message_num == fit_file::GLOBAL_MSG_NUM_RECORD {
             let mut msg = FitRecordMsg::new(fields);
-
-            data.num_records_processed += 1;
 
             if let Some(ts) = msg.timestamp {
                 assert_eq!(timestamp, ts);
