@@ -66,7 +66,7 @@ impl Fit {
         use super::elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
-        let all_elev_data = get_all_elev_data(&needed_tile_coords, &needed_tiles);
+        let all_elev_data = index_tiles(needed_tiles);
 
         add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, overwrite);
     }
@@ -84,7 +84,7 @@ impl Fit {
         let alt = if let Some(enh_alt) = frm.enhanced_altitude {
             Some(enh_alt)
         } else {
-            frm.altitude.map(|alt| alt.into())
+            frm.altitude.map(Into::into)
         }
         .map(|alt| alt as f32 / 5. - 500.); // m
 
@@ -93,7 +93,7 @@ impl Fit {
         let speed = if let Some(enh_spd) = frm.enhanced_speed {
             Some(enh_spd)
         } else {
-            frm.speed.map(|spd| spd.into())
+            frm.speed.map(Into::into)
         }
         .map(|spd| spd as f64);
         // .map(|spd| spd as f64 / 1000. * 3.6); // km/h
@@ -110,8 +110,8 @@ impl Fit {
 
         let mut wp = Waypoint::new(geo_point);
 
-        wp.elevation = alt.map(|alt| alt.into());
-        wp.time = time.map(|t| t.into());
+        wp.elevation = alt.map(Into::into);
+        wp.time = time.map(Into::into);
         wp.speed = speed;
 
         wp
