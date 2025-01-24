@@ -41,7 +41,7 @@ pub fn read_needed_tiles(
 }
 // TODO: docs
 /// index the tiles with their coordinates
-pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i32, i32), srtm_reader::Tile> {
+pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_reader::Tile> {
     log::info!("indexing all dem tiles");
     log::trace!("tiles: {tiles:?}");
     tiles
@@ -74,7 +74,7 @@ pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i32, i32), srtm_re
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],
-    elev_data: &HashMap<(i32, i32), srtm_reader::Tile>,
+    elev_data: &HashMap<(i8, i16), srtm_reader::Tile>,
     overwrite: bool,
 ) {
     // coord is (x;y) but we need (y;x)
