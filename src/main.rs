@@ -67,7 +67,7 @@ fn main() -> Res<()> {
 }
 
 #[cfg(feature = "elevation")]
-fn read_elev_data(conf: &args::Cli, all_fit: &Vec<Fit>) -> HashMap<(i32, i32), srtm_reader::Tile> {
+fn read_elev_data(conf: &args::Cli, all_fit: &Vec<Fit>) -> HashMap<(i8, i16), srtm_reader::Tile> {
     log::info!("should add elevation: {:?}", conf.add_elevation);
     if !conf.add_elevation {
         return HashMap::new();

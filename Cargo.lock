@@ -424,8 +424,9 @@ dependencies = [
 
 [[package]]
 name = "srtm_reader"
-version = "0.4.0"
-source = "git+https://github.com/jeromeschmied/srtm_reader#84b357165a524a3a180ce90e96152ed38180c13c"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a2b003f10dd9f28e302de4fe93def3f46098d966156cac55ce424e72d947dd9"
 dependencies = [
  "byteorder",
 ]
