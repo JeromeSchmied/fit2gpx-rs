@@ -12,7 +12,6 @@ fn main() -> Res<()> {
 
     // collecting cli args
     let conf = args::Cli::parse();
-    // TODO: appropriate logging
     #[cfg(feature = "elevation")]
     {
         log::info!("should add elevation: {:?}", conf.add_elevation);
@@ -60,7 +59,7 @@ fn main() -> Res<()> {
     let all_needed_tiles = read_needed_tiles(&all_needed_tile_coords, conf.elev_data_dir);
     #[cfg(feature = "elevation")]
     // merging coordinates and tiles into a `HashMap`
-    let all_elev_data = index_needed_tiles(&all_needed_tile_coords, &all_needed_tiles);
+    let all_elev_data = index_tiles(&all_needed_tiles);
 
     // iterating over all .fit files that are in memory in parallel
     // adding elevation data if requested
@@ -77,7 +76,7 @@ fn main() -> Res<()> {
                     conf.overwrite,
                 );
             }
-            log::info!("converting {:?}", fit.file_name);
+            log::debug!("converting {:?}", fit.file_name);
             if fit.track_segment.points.is_empty() {
                 log::warn!("{:?}: empty trkseg, ignoring...", fit.file_name);
                 Ok(())

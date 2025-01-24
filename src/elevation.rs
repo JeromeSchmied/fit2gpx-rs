@@ -7,7 +7,6 @@ use std::{
 };
 
 // TODO: docs
-// TODO: consider using BTreeSet instead of Vec
 pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<(i32, i32)> {
     // kinda Waypoint to (i32, i32)
     let trunc = |wp: &Waypoint| -> (i32, i32) {
@@ -43,33 +42,19 @@ pub fn read_needed_tiles(
         })
         .collect::<Vec<_>>()
 }
-// TODO: don't panic
 // TODO: docs
 /// index the tiles with their coordinates
-pub fn index_needed_tiles<'a>(
-    needs: &'a BTreeSet<(i32, i32)>,
-    tiles: &'a [srtm_reader::Tile],
-) -> HashMap<&'a (i32, i32), &'a srtm_reader::Tile> {
+pub fn index_tiles(tiles: &[srtm_reader::Tile]) -> HashMap<(i32, i32), &srtm_reader::Tile> {
     log::info!("reading all coordinates' elevation into memory");
-    log::debug!("elevation needed for coordinates: {needs:?}");
-    assert_eq!(
-        needs.len(),
-        tiles.len(),
-        "number of needed tiles and loaded tiles not equal"
-    );
-    needs
-        .iter()
-        .enumerate()
-        .map(|(i, coord)| (coord, tiles.get(i).unwrap()))
-        .collect::<HashMap<_, _>>()
+    log::trace!("elevation needed for coordinates: {tiles:?}");
+    tiles
+        .par_iter()
+        .map(|tile| ((tile.latitude, tile.longitude), tile))
+        .collect()
     // log::debug!("loaded elevation data: {:?}", all_elev_data.keys());
 }
 
-/// add elevation to all `wps` using `elev_data`, in parallel
-///
-/// # Panics
-///
-/// elevation data needed, but not loaded
+/// add elevation to all `wps` using `elev_data` if available, in parallel
 ///
 /// # Safety
 ///
@@ -86,16 +71,16 @@ pub fn index_needed_tiles<'a>(
 /// let elev_data_dir = "~/Downloads/srtm_data";
 /// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
 /// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = elevation::index_needed_tiles(&needed_tile_coords, &needed_tiles);
+/// let all_elev_data = elevation::index_needed_tiles(&needed_tiles);
 ///
 /// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
 /// ```
 pub fn add_elev_unchecked(
     wps: &mut [Waypoint],
-    elev_data: &HashMap<&(i32, i32), &srtm_reader::Tile>,
+    elev_data: &HashMap<(i32, i32), &srtm_reader::Tile>,
     overwrite: bool,
 ) {
-    // coord is x,y but we need y,x
+    // coord is (x;y) but we need (y;x)
     let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {
         let (x, y) = wp.point().x_y();
         (y, x).into()
@@ -104,10 +89,9 @@ pub fn add_elev_unchecked(
         .filter(|wp| (wp.elevation.is_none() || overwrite) && !utils::is_00(wp))
         .for_each(|wp| {
             let coord = xy_yx(wp);
-            let elev_data = elev_data
-                .get(&coord.trunc())
-                .expect("elevation data must be loaded");
-            let elev = elev_data.get(coord);
-            wp.elevation = elev.map(|x| *x as f64);
+            if let Some(elev_data) = elev_data.get(&coord.trunc()) {
+                let elev = elev_data.get(coord);
+                wp.elevation = elev.map(|x| *x as f64);
+            }
         });
 }
