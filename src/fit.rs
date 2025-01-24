@@ -84,7 +84,7 @@ impl Fit {
         let alt = if let Some(enh_alt) = frm.enhanced_altitude {
             Some(enh_alt)
         } else {
-            frm.altitude.map(|alt| alt.into())
+            frm.altitude.map(Into::into)
         }
         .map(|alt| alt as f32 / 5. - 500.); // m
 
@@ -93,7 +93,7 @@ impl Fit {
         let speed = if let Some(enh_spd) = frm.enhanced_speed {
             Some(enh_spd)
         } else {
-            frm.speed.map(|spd| spd.into())
+            frm.speed.map(Into::into)
         }
         .map(|spd| spd as f64);
         // .map(|spd| spd as f64 / 1000. * 3.6); // km/h
@@ -110,8 +110,8 @@ impl Fit {
 
         let mut wp = Waypoint::new(geo_point);
 
-        wp.elevation = alt.map(|alt| alt.into());
-        wp.time = time.map(|t| t.into());
+        wp.elevation = alt.map(Into::into);
+        wp.time = time.map(Into::into);
         wp.speed = speed;
 
         wp

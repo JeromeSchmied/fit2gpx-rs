@@ -3,7 +3,6 @@ use clap::Parser;
 use fit2gpx::elevation::*;
 use fit2gpx::{fit::Fit, Res};
 use rayon::prelude::*;
-use std::collections::BTreeSet;
 
 mod args;
 
@@ -12,11 +11,6 @@ fn main() -> Res<()> {
 
     // collecting cli args
     let conf = args::Cli::parse();
-    #[cfg(feature = "elevation")]
-    {
-        log::info!("should add elevation: {:?}", conf.add_elevation);
-        log::info!("elevation data directory: {:?}", conf.elev_data_dir);
-    }
     log::debug!("cli args: {conf:?}");
     log::info!("should overwrite existing gpx: {}", conf.overwrite);
 
@@ -28,12 +22,12 @@ fn main() -> Res<()> {
             let is_fit = f.extension().is_some_and(|x| x == "fit");
             let converted = f.with_extension("gpx").exists();
             let remains = is_fit && (conf.overwrite || !converted);
-            if !remains {
+            if remains {
+                log::debug!("loading {f:?} into memory");
+            } else {
                 log::warn!(
                     "ignoring {f:?}: extension is fit: {is_fit}, converted already: {converted}"
                 );
-            } else {
-                log::debug!("loading {f:?} into memory");
             }
             remains
         })
@@ -41,25 +35,7 @@ fn main() -> Res<()> {
         .collect::<Vec<_>>();
 
     #[cfg(feature = "elevation")]
-    // collecting all needed tiles' coordinates, if adding elevation
-    let all_needed_tile_coords = if conf.add_elevation {
-        log::info!("loading needed tiles' coordinates");
-        let all = all_fit
-            .par_iter()
-            .flat_map(|fit| needed_tile_coords(&fit.track_segment.points))
-            .collect::<BTreeSet<_>>();
-        log::debug!("loaded these tiles: {all:?}");
-
-        all
-    } else {
-        BTreeSet::new()
-    };
-    #[cfg(feature = "elevation")]
-    // reading all needed tiles to memory
-    let all_needed_tiles = read_needed_tiles(&all_needed_tile_coords, conf.elev_data_dir);
-    #[cfg(feature = "elevation")]
-    // merging coordinates and tiles into a `HashMap`
-    let all_elev_data = index_tiles(all_needed_tiles);
+    let all_elev_data = read_elev_data(&conf, &all_fit);
 
     // iterating over all .fit files that are in memory in parallel
     // adding elevation data if requested
@@ -88,4 +64,31 @@ fn main() -> Res<()> {
         })?;
 
     Ok(())
+}
+
+#[cfg(feature = "elevation")]
+fn read_elev_data(conf: &args::Cli, all_fit: &Vec<Fit>) -> HashMap<(i32, i32), srtm_reader::Tile> {
+    log::info!("should add elevation: {:?}", conf.add_elevation);
+    if !conf.add_elevation {
+        return HashMap::new();
+    }
+    log::info!("elevation data directory: {:?}", conf.elev_data_dir);
+
+    // collecting all needed tiles' coordinates, if adding elevation
+    let all_needed_tile_coords = if conf.add_elevation {
+        log::info!("loading needed tiles' coordinates");
+        let all = all_fit
+            .par_iter()
+            .flat_map(|fit| needed_tile_coords(&fit.track_segment.points))
+            .collect::<BTreeSet<_>>();
+        log::debug!("loaded these tiles: {all:?}");
+
+        all
+    } else {
+        BTreeSet::new()
+    };
+    // reading all needed tiles to memory
+    let all_needed_tiles = read_needed_tiles(&all_needed_tile_coords, &conf.elev_data_dir);
+    // merging coordinates and tiles into a `HashMap`
+    index_tiles(all_needed_tiles)
 }
