@@ -6,12 +6,15 @@ pub use std::{
     path::Path,
 };
 
+/// truncated coordinate
+pub type TrunCoord = (i8, i16);
+
 // TODO: docs
-pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<(i32, i32)> {
+pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<TrunCoord> {
     // kinda Waypoint to (i32, i32)
-    let trunc = |wp: &Waypoint| -> (i32, i32) {
+    let trunc = |wp: &Waypoint| -> TrunCoord {
         let (x, y) = wp.point().x_y();
-        (y.trunc() as i32, x.trunc() as i32)
+        (y.trunc() as i8, x.trunc() as i16)
     };
     // tiles we need
     wps.par_iter()
@@ -22,7 +25,7 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<(i32, i32)> {
 
 // TODO: docs
 pub fn read_needed_tiles(
-    needs: &BTreeSet<(i32, i32)>,
+    needs: &BTreeSet<TrunCoord>,
     elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
     log::info!("reading needed tiles into memory");
@@ -31,7 +34,7 @@ pub fn read_needed_tiles(
     let elev_data_dir = elev_data_dir.as_ref();
     needs
         .par_iter()
-        .map(|c| srtm_reader::get_filename(*c))
+        .map(|c| srtm_reader::Coord::from(*c).get_filename())
         .map(|t| elev_data_dir.join(t))
         .flat_map(|p| {
             srtm_reader::Tile::from_file(&p)
