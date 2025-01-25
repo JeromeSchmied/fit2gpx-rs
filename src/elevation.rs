@@ -7,12 +7,12 @@ pub use std::{
 };
 
 /// truncated coordinate
-pub type TrunCoord = (i8, i16);
+pub type Coord = (i8, i16);
 
 // TODO: docs
-pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<TrunCoord> {
-    // kinda Waypoint to (i32, i32)
-    let trunc = |wp: &Waypoint| -> TrunCoord {
+pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<Coord> {
+    // kinda Waypoint to Coord
+    let trunc = |wp: &Waypoint| -> Coord {
         let (x, y) = wp.point().x_y();
         (y.trunc() as i8, x.trunc() as i16)
     };
@@ -25,7 +25,7 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<TrunCoord> {
 
 // TODO: docs
 pub fn read_needed_tiles(
-    needs: &BTreeSet<TrunCoord>,
+    needs: &BTreeSet<Coord>,
     elev_data_dir: impl AsRef<Path>,
 ) -> Vec<srtm_reader::Tile> {
     log::info!("reading needed tiles into memory");
