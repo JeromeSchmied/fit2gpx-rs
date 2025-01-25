@@ -77,12 +77,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
-name = "byteorder"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
-
-[[package]]
 name = "clap"
 version = "4.5.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -214,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "fit2gpx"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "clap",
  "env_logger",
@@ -424,12 +418,9 @@ dependencies = [
 
 [[package]]
 name = "srtm_reader"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a2b003f10dd9f28e302de4fe93def3f46098d966156cac55ce424e72d947dd9"
-dependencies = [
- "byteorder",
-]
+checksum = "ae82b5e949a85ec77c28ff244fd1277682cd6ecbd4749bec8ee5197365ab75ec"
 
 [[package]]
 name = "strsim"
