@@ -1,4 +1,4 @@
-# [fit2gpx-rs][fit2gpx-rs]: convert .fit to .gpx files efficiently
+# [fit2gpx-rs][fit2gpx-rs]: efficient fit to gpx converter 
 
 ## Installation
 
