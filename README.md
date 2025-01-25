@@ -4,8 +4,14 @@
 
 ### download binary
 
-> [!NOTE]
-> binary releases will soon be provided for linux, macos and windows
+1. Go to [releases](https://github.com/JeromeSchmied/fit2gpx-rs/releases/latest) and download the binary for your os and arch.  
+If one's not available, [file an issue](https://github.com/JeromeSchmied/fit2gpx-rs/issues/new) and [build from source](#build).
+2. unzip
+3. If on mac or linux: `chmod +x $fit2gpx-binary`
+
+You could use [eget](https://github.com/zyedidia/eget) or something similar as well: `eget jeromeschmied/fit2gpx-rs`
+
+**finally**: `./fit2gpx --help`
 
 ### build
 
