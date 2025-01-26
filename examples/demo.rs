@@ -14,5 +14,9 @@ fn main() {
         }
     });
 
-    fit.save_to_gpx().unwrap();
+    let out_path = std::path::PathBuf::from("rundumadum_elevation.gpx");
+    fit.save_to_gpx(&out_path).unwrap();
+    assert!(out_path.exists());
+    // cleanup
+    std::fs::remove_file(out_path).unwrap();
 }

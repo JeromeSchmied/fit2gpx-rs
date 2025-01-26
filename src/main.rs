@@ -53,7 +53,8 @@ fn main() -> Res<()> {
             log::warn!("{:?}: empty trkseg, ignoring...", fit.file_name);
             Ok(())
         } else {
-            fit.save_to_gpx()
+            let out_p = fit.file_name.with_extension("gpx");
+            fit.save_to_gpx(out_p)
                 .inspect_err(|e| log::error!("conversion error: {e:?}"))
                 .map_err(|_| "conversion error")
         }

@@ -48,31 +48,30 @@ impl Fit {
         });
         Ok(fit)
     }
-    /// convert a fit file at `fit_path` to gpx, with the same filename, but gpx extension
+    /// convert a fit file at `fit_path`, write to `fname`
     /// # errors
     /// can't read fit
     /// can't write gpx
-    pub fn file_to_gpx(fit_path: impl AsRef<Path>) -> Res<()> {
+    pub fn file_to_gpx(fit_path: impl AsRef<Path>, fname: impl AsRef<Path>) -> Res<()> {
         let fit = Fit::from_file(fit_path)?;
-        fit.save_to_gpx()
+        fit.save_to_gpx(fname)
     }
 
-    /// convert fit content from `read` to `fname.gpx`
+    /// convert fit content from `read` to `fname`
     /// # errors
     /// can't read fit
     /// can't write gpx
     pub fn reader_to_gpx(read: impl io::Read, fname: impl AsRef<Path>) -> Res<()> {
-        let fit = Fit::from_reader(read)?.with_filename(fname.as_ref());
-        fit.save_to_gpx()
+        let fit = Fit::from_reader(read)?;
+        fit.save_to_gpx(fname)
     }
 
     /// write `self` to it's gpx, with the same filename, but gpx extension
     /// # errors
     /// can't write gpx
-    pub fn save_to_gpx(self) -> Res<()> {
-        let fname = self.file_name.with_extension("gpx");
+    pub fn save_to_gpx(self, fname: impl AsRef<Path>) -> Res<()> {
         let gpx: Gpx = self.into();
-        utils::write_gpx_to_file(gpx, &fname)
+        utils::write_gpx_to_file(gpx, fname)
     }
 }
 /// private fns
