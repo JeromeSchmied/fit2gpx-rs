@@ -9,6 +9,7 @@ keywords = ["garmin", "fit", "cli", "gpx"]
 categories = ["command-line-interface", "science::geo"]
 repository = "https://github.com/jeromeschmied/fit2gpx-rs"
 license = "MIT"
+exclude = ["*.fit"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
