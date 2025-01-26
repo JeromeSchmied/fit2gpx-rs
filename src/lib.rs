@@ -1,17 +1,15 @@
 //! fit2gpx
 //!
-//! a simple fit to gpx converter,
-//! with a feature for adding elevation from `srtm` data
+//! A simple, yet powerful fit to gpx converter,
+//! capable of adding elevation while conversion from `HGT` DTM data.
 //!
+//! Uses `rayon` for multithreaded execution.
 //!
+//! # Usage
 //!
-//!
-//!
-//!
-//!
-//!
-//!
-// TODO: proper docs
+//! ```rust
+#![doc = include_str!("../examples/demo.rs")]
+//! ```
 
 /// universal Result, but not sendable
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
