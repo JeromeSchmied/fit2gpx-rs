@@ -13,7 +13,7 @@ pub struct Fit {
     pub track_segment: TrackSegment,
 }
 
-// high level functions impl
+// public fns
 impl Fit {
     /// add a filename to `self`, create new instance
     pub fn with_filename(self, fname: impl Into<PathBuf>) -> Self {
@@ -90,6 +90,7 @@ impl Fit {
         add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, overwrite);
     }
 }
+/// private fns
 impl Fit {
     /// [`fit_file::FitRecordMsg`] to [`gpx::Waypoint`]
     // TODO: support heart-rate, distance, temperature and such extensions, if `gpx` crate does too
