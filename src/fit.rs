@@ -3,6 +3,7 @@ use fit_file::{fit_file, FitFieldValue, FitRecordMsg};
 use geo_types::{coord, Point};
 use gpx::{Gpx, GpxVersion, Track, TrackSegment, Waypoint};
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 use time::OffsetDateTime;
 
 /// Fit Context structure. An instance of this will be passed to the parser and ultimately to the callback function so we can use it for whatever.
@@ -22,19 +23,19 @@ impl Fit {
         }
     }
     /// create a [`Fit`] from a `path`, where a fit file lies
-    // TODO: docs
+    /// # errors
+    ///
     pub fn from_file(fit_path: impl AsRef<Path>) -> Res<Self> {
-        let file = std::fs::File::open(&fit_path)?;
-        let mut bufread = std::io::BufReader::new(file);
+        let mut file = fs::File::open(&fit_path)?;
 
-        Ok(Self::from_reader(&mut bufread)?.with_filename(fit_path.as_ref()))
+        Ok(Self::from_reader(&mut file)?.with_filename(fit_path.as_ref()))
     }
 
     // TODO: docs
-    pub fn from_reader(reader: impl std::io::Read) -> Res<Self> {
+    pub fn from_reader(reader: impl io::Read) -> Res<Self> {
         let mut fit = Fit::default();
 
-        let mut bufread = std::io::BufReader::new(reader);
+        let mut bufread = io::BufReader::new(reader);
         fit_file::read(&mut bufread, Self::callback, &mut fit)?;
 
         fit.track_segment.points.retain(|wp| {
@@ -48,7 +49,7 @@ impl Fit {
         fit.save_to_gpx()
     }
 
-    pub fn reader_to_gpx(read: impl std::io::Read, fname: impl AsRef<Path>) -> Res<()> {
+    pub fn reader_to_gpx(read: impl io::Read, fname: impl AsRef<Path>) -> Res<()> {
         let fit = Fit::from_reader(read)?.with_filename(fname.as_ref());
         fit.save_to_gpx()
     }
