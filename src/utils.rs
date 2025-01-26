@@ -13,7 +13,7 @@ pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> Res<()> {
     log::debug!("written {:?}", fname.as_ref());
     Ok(())
 }
-// TODO: docs
+/// is this `wp` null(0; 0)?
 pub fn is_00(wp: &Waypoint) -> bool {
     let res = wp.point().x_y() == (0., 0.);
     if res {
