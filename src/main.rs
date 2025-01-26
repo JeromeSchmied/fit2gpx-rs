@@ -40,34 +40,30 @@ fn main() -> Res<()> {
     // iterating over all .fit files that are in memory in parallel
     // adding elevation data if requested
     // converting to .gpx and writing it to disk
-    all_fit
-        .into_par_iter()
-        .try_for_each(|mut fit: Fit| -> Result<(), &'static str> {
-            #[cfg(feature = "elevation")]
-            if conf.add_elevation {
-                log::debug!("adding elevation to {:?}", fit.file_name);
-                add_elev_unchecked(
-                    &mut fit.track_segment.points,
-                    &all_elev_data,
-                    conf.overwrite,
-                );
+    all_fit.into_par_iter().try_for_each(|mut fit: Fit| {
+        #[cfg(feature = "elevation")]
+        if conf.add_elevation {
+            log::debug!("adding elevation to {:?}", fit.file_name);
+            if let Err(e) = fit.add_elev_loaded(&all_elev_data, conf.overwrite) {
+                log::error!("{e}");
             }
-            log::debug!("converting {:?}", fit.file_name);
-            if fit.track_segment.points.is_empty() {
-                log::warn!("{:?}: empty trkseg, ignoring...", fit.file_name);
-                Ok(())
-            } else {
-                fit.save_to_gpx()
-                    .inspect_err(|e| log::error!("conversion error: {e:?}"))
-                    .map_err(|_| "conversion error")
-            }
-        })?;
+        }
+        log::debug!("converting {:?}", fit.file_name);
+        if fit.track_segment.points.is_empty() {
+            log::warn!("{:?}: empty trkseg, ignoring...", fit.file_name);
+            Ok(())
+        } else {
+            fit.save_to_gpx()
+                .inspect_err(|e| log::error!("conversion error: {e:?}"))
+                .map_err(|_| "conversion error")
+        }
+    })?;
 
     Ok(())
 }
 
 #[cfg(feature = "elevation")]
-fn read_elev_data(conf: &args::Cli, all_fit: &Vec<Fit>) -> HashMap<(i8, i16), srtm_reader::Tile> {
+fn read_elev_data(conf: &args::Cli, all_fit: &Vec<Fit>) -> ElevData {
     log::info!("should add elevation: {:?}", conf.add_elevation);
     if !conf.add_elevation {
         return HashMap::new();

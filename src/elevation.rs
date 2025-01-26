@@ -1,4 +1,4 @@
-use crate::utils;
+use crate::{utils, Res};
 use gpx::Waypoint;
 use rayon::prelude::*;
 pub use std::{
@@ -8,6 +8,8 @@ pub use std::{
 
 /// truncated coordinate
 pub type Coord = (i8, i16);
+/// loaded elevation data, consisting of [`Coord`]s mapped to [`srtm_reader::Tile`]
+pub type ElevData = HashMap<Coord, srtm_reader::Tile>;
 
 /// collect all the [`srtm_reader::Tile`]'s coordinates that shall be loaded into memory
 /// in order to be able to get elevation data for all `wps`
@@ -45,7 +47,7 @@ pub fn read_needed_tiles(
         .collect()
 }
 /// index the [`srtm_reader::Tile`]s with their coordinates
-pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_reader::Tile> {
+pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> ElevData {
     log::info!("indexing all dem tiles");
     log::trace!("tiles: {tiles:?}");
     tiles
@@ -54,42 +56,58 @@ pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_rea
         .collect()
     // log::debug!("loaded elevation data: {:?}", all_elev_data.keys());
 }
-impl crate::Fit {}
+impl crate::Fit {
+    /// add elevation data to the `fit` struct, reading hgt DTM from `elev_data_dir`
+    /// # usage
+    /// write manually, utilizing [`Self::add_elev_loaded`], instead of using in batch,
+    /// as loading DTM is relatively slow, reading it once and storing it can greatly increase performance
+    /// **_NOTE_**: if DTM can't be loaded, it will NOT be added
+    pub fn add_elev_read(&mut self, elev_data_dir: impl AsRef<Path>, overwrite: bool) -> Res<()> {
+        use super::elevation::*;
+        let needed_tile_coords = needed_tile_coords(&self.track_segment.points);
+        let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
+        let all_elev_data = index_tiles(needed_tiles);
 
-/// add elevation to all `wps` using `elev_data` if available, in parallel
-///
-/// # Usage
-///
-/// using the following order, it should be safe
-///
-/// ```no_run
-/// use fit2gpx::elevation;
-///
-/// let mut fit = fit2gpx::Fit::from_file("evening_walk.fit").unwrap();
-/// let elev_data_dir = "~/Downloads/srtm_data";
-/// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
-/// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
-/// let all_elev_data = elevation::index_tiles(needed_tiles);
-///
-/// elevation::add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, false);
-/// ```
-pub fn add_elev_unchecked(
-    wps: &mut [Waypoint],
-    elev_data: &HashMap<(i8, i16), srtm_reader::Tile>,
-    overwrite: bool,
-) {
-    // coord is (x;y) but we need (y;x)
-    let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {
-        let (x, y) = wp.point().x_y();
-        (y, x).into()
-    };
-    wps.into_par_iter()
-        .filter(|wp| (wp.elevation.is_none() || overwrite) && !utils::is_00(wp))
-        .for_each(|wp| {
-            let coord = xy_yx(wp);
-            if let Some(elev_data) = elev_data.get(&coord.trunc()) {
-                let elev = elev_data.get(coord);
-                wp.elevation = elev.map(|x| *x as f64);
-            }
-        });
+        self.add_elev_loaded(&all_elev_data, overwrite)
+    }
+    /// add elevation to `self` using already loaded `elev_data` in parallel
+    /// **_NOTE_**: if a needed [`srtm_reader::Tile`] is NOT loaded, elevation will NOT be added
+    ///
+    /// # Usage
+    ///
+    /// using the following order, it should be safe
+    ///
+    /// ```no_run
+    /// use fit2gpx::elevation;
+    ///
+    /// let mut fit = fit2gpx::Fit::from_file("evening_walk.fit").unwrap();
+    /// let elev_data_dir = "~/Downloads/srtm_data";
+    /// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
+    /// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
+    /// let all_elev_data = elevation::index_tiles(needed_tiles);
+    ///
+    /// fit.add_elev_loaded(&all_elev_data, false);
+    /// ```
+    pub fn add_elev_loaded(&mut self, elev_data: &ElevData, overwrite: bool) -> Res<()> {
+        // coord is (x;y) but we need (y;x)
+        let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {
+            let (x, y) = wp.point().x_y();
+            (y, x).into()
+        };
+        Ok(self
+            .track_segment
+            .points
+            .par_iter_mut()
+            .filter(|wp| (wp.elevation.is_none() || overwrite) && !utils::is_00(wp))
+            .try_for_each(|wp| {
+                let coord = xy_yx(wp);
+                if let Some(elev_data) = elev_data.get(&coord.trunc()) {
+                    let elev = elev_data.get(coord);
+                    wp.elevation = elev.map(|x| *x as f64);
+                    Ok(())
+                } else {
+                    Err(format!("`elev_data` didn't contain {coord:?}"))
+                }
+            })?)
+    }
 }
