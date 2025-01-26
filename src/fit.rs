@@ -74,21 +74,6 @@ impl Fit {
         let gpx: Gpx = self.into();
         utils::write_gpx_to_file(gpx, &fname)
     }
-
-    #[cfg(feature = "elevation")]
-    /// add elevation data to the `fit` struct, using hgt DTM from `elev_data_dir`
-    /// # usage
-    /// write manually instead of using in batch, as loading DTM is relatively slow,
-    /// reading it once and storing it can greatly increase performance
-    /// **_NOTE_**: if DTM can't be loaded, it will NOT be added
-    pub fn add_elev(fit: &mut Fit, elev_data_dir: impl AsRef<Path>, overwrite: bool) {
-        use super::elevation::*;
-        let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
-        let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
-        let all_elev_data = index_tiles(needed_tiles);
-
-        add_elev_unchecked(&mut fit.track_segment.points, &all_elev_data, overwrite);
-    }
 }
 /// private fns
 impl Fit {
