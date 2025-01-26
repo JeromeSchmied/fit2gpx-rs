@@ -6,7 +6,7 @@ edition = "2021"
 authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = ".fit to .gpx converter"
 keywords = ["garmin", "fit", "cli", "gpx"]
-categories = ["command-line-interface"]
+categories = ["command-line-interface", "science::geo"]
 repository = "https://github.com/jeromeschmied/fit2gpx-rs"
 license = "MIT"
 
