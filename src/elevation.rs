@@ -9,7 +9,8 @@ pub use std::{
 /// truncated coordinate
 pub type Coord = (i8, i16);
 
-// TODO: docs
+/// collect all the [`srtm_reader::Tile`]'s coordinates that shall be loaded into memory
+/// in order to be able to get elevation data for all `wps`
 pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<Coord> {
     // kinda Waypoint to Coord
     let trunc = |wp: &Waypoint| -> Coord {
@@ -23,7 +24,8 @@ pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<Coord> {
         .collect()
 }
 
-// TODO: docs
+/// read HGT [`srtm_reader::Tile`]s specified by `needs`, from `elev_data_dir`
+/// **_NOTE_**: if a [`srtm_reader::Tile`] can't be loaded, it won't be
 pub fn read_needed_tiles(
     needs: &BTreeSet<Coord>,
     elev_data_dir: impl AsRef<Path>,
@@ -42,8 +44,7 @@ pub fn read_needed_tiles(
         })
         .collect()
 }
-// TODO: docs
-/// index the tiles with their coordinates
+/// index the [`srtm_reader::Tile`]s with their coordinates
 pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_reader::Tile> {
     log::info!("indexing all dem tiles");
     log::trace!("tiles: {tiles:?}");
@@ -53,12 +54,9 @@ pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_rea
         .collect()
     // log::debug!("loaded elevation data: {:?}", all_elev_data.keys());
 }
+impl crate::Fit {}
 
 /// add elevation to all `wps` using `elev_data` if available, in parallel
-///
-/// # Safety
-///
-/// it's the caller's responsibility to have the necessary data loaded
 ///
 /// # Usage
 ///
@@ -67,7 +65,7 @@ pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> HashMap<(i8, i16), srtm_rea
 /// ```no_run
 /// use fit2gpx::elevation;
 ///
-/// let mut fit = fit2gpx::Fit::from_file("evening walk.gpx").unwrap();
+/// let mut fit = fit2gpx::Fit::from_file("evening_walk.fit").unwrap();
 /// let elev_data_dir = "~/Downloads/srtm_data";
 /// let needed_tile_coords = elevation::needed_tile_coords(&fit.track_segment.points);
 /// let needed_tiles = elevation::read_needed_tiles(&needed_tile_coords, elev_data_dir);
