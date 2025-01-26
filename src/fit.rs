@@ -22,16 +22,20 @@ impl Fit {
             ..self
         }
     }
-    /// create a [`Fit`] from a `path`, where a fit file lies
+    /// create [`Fit`] from the fit file at `fit_path`
     /// # errors
-    ///
+    /// can't open file at `fit_path`
+    /// can't read fit: invalid
     pub fn from_file(fit_path: impl AsRef<Path>) -> Res<Self> {
         let mut file = fs::File::open(&fit_path)?;
 
         Ok(Self::from_reader(&mut file)?.with_filename(fit_path.as_ref()))
     }
 
-    // TODO: docs
+    /// create [`Fit`] from the fit content of `reader`
+    /// also deletes (probably) null or invalid `track_segment.points`
+    /// # errors
+    /// can't read fit: invalid
     pub fn from_reader(reader: impl io::Read) -> Res<Self> {
         let mut fit = Fit::default();
 
@@ -44,16 +48,27 @@ impl Fit {
         });
         Ok(fit)
     }
+    /// convert a fit file at `fit_path` to gpx, with the same filename, but gpx extension
+    /// # errors
+    /// can't read fit
+    /// can't write gpx
     pub fn file_to_gpx(fit_path: impl AsRef<Path>) -> Res<()> {
         let fit = Fit::from_file(fit_path)?;
         fit.save_to_gpx()
     }
 
+    /// convert fit content from `read` to `fname.gpx`
+    /// # errors
+    /// can't read fit
+    /// can't write gpx
     pub fn reader_to_gpx(read: impl io::Read, fname: impl AsRef<Path>) -> Res<()> {
         let fit = Fit::from_reader(read)?.with_filename(fname.as_ref());
         fit.save_to_gpx()
     }
 
+    /// write `self` to it's gpx, with the same filename, but gpx extension
+    /// # errors
+    /// can't write gpx
     pub fn save_to_gpx(self) -> Res<()> {
         let fname = self.file_name.with_extension("gpx");
         let gpx: Gpx = self.into();
@@ -61,7 +76,11 @@ impl Fit {
     }
 
     #[cfg(feature = "elevation")]
-    /// add elevation data to the `fit` file, using srtm data from `elev_data_dir`
+    /// add elevation data to the `fit` struct, using hgt DTM from `elev_data_dir`
+    /// # usage
+    /// write manually instead of using in batch, as loading DTM is relatively slow,
+    /// reading it once and storing it can greatly increase performance
+    /// **_NOTE_**: if DTM can't be loaded, it will NOT be added
     pub fn add_elev(fit: &mut Fit, elev_data_dir: impl AsRef<Path>, overwrite: bool) {
         use super::elevation::*;
         let needed_tile_coords = needed_tile_coords(&fit.track_segment.points);
