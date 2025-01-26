@@ -116,7 +116,6 @@ impl Fit {
         wp
     }
     /// Called for each record message as it is being processed.
-    // TODO: don't panic
     fn callback(
         timestamp: u32,
         global_message_num: u16,
@@ -134,11 +133,7 @@ impl Fit {
         if global_message_num == fit_file::GLOBAL_MSG_NUM_RECORD {
             let mut msg = FitRecordMsg::new(fields);
 
-            if let Some(ts) = msg.timestamp {
-                assert_eq!(timestamp, ts);
-            } else {
-                msg.timestamp = Some(timestamp);
-            }
+            msg.timestamp = Some(timestamp);
 
             let wp = Self::frm_to_gwp(msg);
             data.track_segment.points.push(wp);
