@@ -22,7 +22,7 @@ gpx = "0.10.0"
 log = "0.4.26"
 rayon = "1.10.0"
 srtm_reader = { version = "0.5.1", optional = true }
-time = { version = "0.3.39", default-features = false }
+time = { version = "0.3.41", default-features = false }
 
 [features]
 default = ["elevation"]
