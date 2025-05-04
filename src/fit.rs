@@ -99,7 +99,7 @@ impl Fit {
         } else {
             frm.speed.map(Into::into)
         }
-        .map(|spd| spd as f64);
+        .map(f64::from);
         // .map(|spd| spd as f64 / 1000. * 3.6); // km/h
 
         // let hr = frm
