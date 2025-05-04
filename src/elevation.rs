@@ -11,8 +11,8 @@ pub type Coord = (i8, i16);
 /// loaded elevation data, consisting of [`Coord`]s mapped to [`srtm_reader::Tile`]
 pub type ElevData = HashMap<Coord, srtm_reader::Tile>;
 
-/// collect all the [`srtm_reader::Tile`]'s coordinates that shall be loaded into memory
-/// in order to be able to get elevation data for all `wps`
+/// collect all the [`srtm_reader::Tile`]'s [`Coord`]s that shall be loaded into memory
+/// in order to be able to get [`ElevData`] for all [`gpx::Waypoint`]s
 pub fn needed_tile_coords(wps: &[Waypoint]) -> BTreeSet<Coord> {
     // kinda Waypoint to Coord
     let trunc = |wp: &Waypoint| -> Coord {
@@ -58,12 +58,13 @@ pub fn index_tiles(tiles: Vec<srtm_reader::Tile>) -> ElevData {
 }
 impl crate::Fit {
     /// add elevation data to the `fit` struct, reading hgt DTM from `elev_data_dir`
-    /// # usage
+    /// # Usage
     /// write manually, utilizing [`Self::add_elev_loaded`], instead of using in batch,
     /// as loading DTM is relatively slow, reading it once and storing it can greatly increase performance
     /// **_NOTE_**: if DTM can't be loaded, it will NOT be added
+    /// # Errors
+    /// coming from [`Self::add_elev_loaded`]
     pub fn add_elev_read(&mut self, elev_data_dir: impl AsRef<Path>, overwrite: bool) -> Res<()> {
-        use super::elevation::*;
         let needed_tile_coords = needed_tile_coords(&self.track_segment.points);
         let needed_tiles = read_needed_tiles(&needed_tile_coords, elev_data_dir);
         let all_elev_data = index_tiles(needed_tiles);
@@ -71,12 +72,8 @@ impl crate::Fit {
         self.add_elev_loaded(&all_elev_data, overwrite)
     }
     /// add elevation to `self` using already loaded `elev_data` in parallel
-    /// **_NOTE_**: if a needed [`srtm_reader::Tile`] is NOT loaded, elevation will NOT be added
-    ///
     /// # Usage
-    ///
     /// using the following order, it should be safe
-    ///
     /// ```no_run
     /// use fit2gpx::elevation;
     ///
@@ -88,6 +85,9 @@ impl crate::Fit {
     ///
     /// fit.add_elev_loaded(&all_elev_data, false);
     /// ```
+    /// # Errors
+    /// a needed [`srtm_reader::Tile`] isn't loaded
+    /// **_NOTE_**: an elevation read from the [`srtm_reader::Tile`] will be applied whether [`Some`] or [`None`]
     pub fn add_elev_loaded(&mut self, elev_data: &ElevData, overwrite: bool) -> Res<()> {
         // coord is (x;y) but we need (y;x)
         let xy_yx = |wp: &Waypoint| -> srtm_reader::Coord {

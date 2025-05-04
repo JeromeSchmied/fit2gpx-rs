@@ -2,7 +2,7 @@ use gpx::{Gpx, Waypoint};
 use std::{fs::File, io::BufWriter, path::Path};
 
 /// write the `gpx` to `fname`
-/// # errors
+/// # Errors
 /// can't write
 pub fn write_gpx_to_file(gpx: Gpx, fname: impl AsRef<Path>) -> crate::Res<()> {
     // Create file at `fname`
