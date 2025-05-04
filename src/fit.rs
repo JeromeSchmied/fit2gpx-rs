@@ -23,7 +23,7 @@ impl Fit {
         }
     }
     /// create [`Fit`] from the fit file at `fit_path`
-    /// # errors
+    /// # Errors
     /// can't open file at `fit_path`
     /// can't read fit: invalid
     pub fn from_file(fit_path: impl AsRef<Path>) -> Res<Self> {
@@ -34,7 +34,7 @@ impl Fit {
 
     /// create [`Fit`] from the fit content of `reader`
     /// also deletes (probably) null or invalid `track_segment.points`
-    /// # errors
+    /// # Errors
     /// can't read fit: invalid
     pub fn from_reader(reader: impl io::Read) -> Res<Self> {
         let mut fit = Fit::default();
@@ -49,7 +49,7 @@ impl Fit {
         Ok(fit)
     }
     /// convert a fit file at `fit_path`, write to `fname`
-    /// # errors
+    /// # Errors
     /// can't read fit
     /// can't write gpx
     pub fn file_to_gpx(fit_path: impl AsRef<Path>, fname: impl AsRef<Path>) -> Res<()> {
@@ -58,7 +58,7 @@ impl Fit {
     }
 
     /// convert fit content from `read` to `fname`
-    /// # errors
+    /// # Errors
     /// can't read fit
     /// can't write gpx
     pub fn reader_to_gpx(read: impl io::Read, fname: impl AsRef<Path>) -> Res<()> {
@@ -67,7 +67,7 @@ impl Fit {
     }
 
     /// write `self` to it's gpx, with the same filename, but gpx extension
-    /// # errors
+    /// # Errors
     /// can't write gpx
     pub fn save_to_gpx(self, fname: impl AsRef<Path>) -> Res<()> {
         let gpx: Gpx = self.into();
@@ -99,7 +99,7 @@ impl Fit {
         } else {
             frm.speed.map(Into::into)
         }
-        .map(|spd| spd as f64);
+        .map(f64::from);
         // .map(|spd| spd as f64 / 1000. * 3.6); // km/h
 
         // let hr = frm
