@@ -14,7 +14,7 @@ exclude = ["*.fit"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.38", features = ["derive", "env"] }
+clap = { version = "4.5.39", features = ["derive", "env"] }
 env_logger = "0.11.8"
 fit_file = "0.6.0"
 geo-types = "0.7.16"
