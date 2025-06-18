@@ -7,7 +7,7 @@ authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = ".fit to .gpx converter"
 keywords = ["garmin", "fit", "cli", "gpx"]
 categories = ["command-line-interface", "science::geo"]
-repository = "https://github.com/jeromeschmied/fit2gpx-rs"
+repository = "https://github.com/jarjk/fit2gpx-rs"
 license = "MIT"
 exclude = ["*.fit"]
 

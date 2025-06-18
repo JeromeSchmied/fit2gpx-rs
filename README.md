@@ -9,7 +9,7 @@ If one's not available, [file an issue](https://github.com/JeromeSchmied/fit2gpx
 2. unzip
 3. If on mac or linux: `chmod +x $fit2gpx-binary`
 
-You could use [eget](https://github.com/zyedidia/eget) or something similar as well: `eget jeromeschmied/fit2gpx-rs`
+You could use [eget](https://github.com/zyedidia/eget) or something similar as well: `eget jarjk/fit2gpx-rs`
 
 **finally**: `./fit2gpx --help`
 
@@ -19,11 +19,11 @@ You could use [eget](https://github.com/zyedidia/eget) or something similar as w
 2.  have [Rust](https://rust-lang.org) installed
 3.  install
     -   with `cargo` from [crates.io](https://crates.io): `cargo install fit2gpx`
-    -   with `cargo` from [source][fit2gpx-rs]: `cargo install --locked --git "https://github.com/jeromeschmied/fit2gpx-rs"`
+    -   with `cargo` from [source][fit2gpx-rs]: `cargo install --locked --git "https://github.com/jarjk/fit2gpx-rs"`
     -   with `git` and `cargo`: cloning, then building from [source][fit2gpx-rs]:
 
 ```sh
-git clone --depth 1 "https://github.com/jeromeschmied/fit2gpx-rs"
+git clone --depth 1 "https://github.com/jarjk/fit2gpx-rs"
 cd fit2gpx-rs
 cargo install --locked --path .
 # without installing to ...cargo/bin/fit2gpx: cargo r (--release) -- -h
@@ -48,7 +48,7 @@ short:
 fit2gpx::Fit::file_to_gpx("walk.fit").unwrap();
 ```
 
-see [docs](https://docs.rs/crate/fit2gpx) or [examples](https://github.com/jeromeschmied/fit2gpx-rs/tree/main/examples) for more detailed usage
+see [docs](https://docs.rs/crate/fit2gpx) or [examples](https://github.com/jarjk/fit2gpx-rs/tree/main/examples) for more detailed usage
 
 ## Purpose
 
@@ -95,13 +95,13 @@ After [this issue](https://github.com/georust/gpx/issues/8) is resolved, this sh
 
 ## Direct dependencies
 
-<!-- -   [coordinate-altitude](https://github.com/jeromeschmied/coordinate-altitude) -->
+<!-- -   [coordinate-altitude](https://github.com/jarjk/coordinate-altitude) -->
 
 -   [fit_file](https://crates.io/crates/fit_file): reading .fit
 -   [gpx][gpx-crate]: writing .gpx
 -   [clap](https://crates.io/crates/clap): argument parsing
 -   [rayon](https://crates.io/crates/rayon): multi-threadedness
--   [srtm](https://github.com/jeromeschmied/srtm_reader): reading elevation data from SRTM [DTM][dtm-wiki] files
+-   [srtm](https://github.com/jarjk/srtm_reader): reading elevation data from SRTM [DTM][dtm-wiki] files
 
 [fit2gpx-rs]: https://github.com/JeromeSchmied/fit2gpx-rs
 [gpx-crate]: https://crates.io/crates/gpx
