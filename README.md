@@ -4,8 +4,8 @@
 
 ### download binary
 
-1. Go to [releases](https://github.com/JeromeSchmied/fit2gpx-rs/releases/latest) and download the binary for your os and arch.  
-If one's not available, [file an issue](https://github.com/JeromeSchmied/fit2gpx-rs/issues/new) and [build from source](#build).
+1. Go to [releases](https://github.com/jarjk/fit2gpx-rs/releases/latest) and download the binary for your os and arch.  
+If one's not available, [file an issue](https://github.com/jarjk/fit2gpx-rs/issues/new) and [build from source](#build).
 2. unzip
 3. If on mac or linux: `chmod +x $fit2gpx-binary`
 
@@ -103,6 +103,6 @@ After [this issue](https://github.com/georust/gpx/issues/8) is resolved, this sh
 -   [rayon](https://crates.io/crates/rayon): multi-threadedness
 -   [srtm](https://github.com/jarjk/srtm_reader): reading elevation data from SRTM [DTM][dtm-wiki] files
 
-[fit2gpx-rs]: https://github.com/JeromeSchmied/fit2gpx-rs
+[fit2gpx-rs]: https://github.com/jarjk/fit2gpx-rs
 [gpx-crate]: https://crates.io/crates/gpx
 [dtm-wiki]: https://en.wikipedia.org/wiki/Digital_elevation_model
